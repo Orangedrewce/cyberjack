@@ -1,0 +1,1365 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blackjack Pro</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&family=Roboto+Condensed:wght@700&display=swap" rel="stylesheet">
+    <style>
+        /* --- CSS RESET & ROOT VARIABLES --- */
+        :root {
+            --felt-green: #0f4c3a;
+            --dark-green: #0a3326;
+            --gold: #d4af37;
+            --gold-dark: #b8972f;
+            --light-text: #f0f0f0;
+            --dark-bg: #121212;
+            --card-bg: #ffffff;
+            --red-suit: #c81d1d;
+            --black-suit: #222222;
+            --radius-sm: 8px;
+            --radius-md: 16px;
+            --radius-lg: 24px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        /* --- GENERAL STYLING --- */
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: var(--dark-bg);
+            background-image: radial-gradient(circle at top center, var(--dark-green) 0%, var(--dark-bg) 70%);
+            color: var(--light-text);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            padding: 2rem 1rem;
+        }
+        
+        /* --- MAIN GAME CONTAINER --- */
+        .casino-table {
+            width: 100%;
+            max-width: 1000px;
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: var(--radius-lg);
+            padding: 2rem;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+            backdrop-filter: blur(10px);
+            position: relative;
+        }
+
+        /* --- HEADER & INFO SECTION --- */
+        .game-header { text-align: center; margin-bottom: 2rem; }
+        .game-title {
+            font-family: 'Roboto Condensed', sans-serif;
+            font-size: clamp(2rem, 5vw, 2.5rem);
+            font-weight: 700;
+            color: var(--gold);
+            text-shadow: 0 0 10px rgba(212, 175, 55, 0.5);
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+        
+        .info-bar {
+            display: flex; justify-content: space-between; align-items: center;
+            flex-wrap: wrap; gap: 1rem; padding: 1rem;
+            background: rgba(0, 0, 0, 0.3); border-radius: var(--radius-md);
+            margin-bottom: 2rem;
+        }
+        
+        .bankroll-info, .house-edge-control { font-size: 1rem; font-weight: 600; }
+        .house-edge-control { display: flex; align-items: center; gap: 0.5rem; }
+        .house-edge-control input {
+            width: 50px; border: 1px solid var(--gold); background: transparent;
+            color: var(--light-text); border-radius: 4px; text-align: center;
+            padding: 0.25rem; font-weight: 600;
+        }
+
+        /* --- SETTINGS & STATS ACCORDION --- */
+        .accordion { margin-bottom: 1.5rem; }
+        .accordion summary {
+            cursor: pointer; font-weight: 600; color: var(--gold);
+            padding: 0.5rem; border: 1px solid var(--gold-dark);
+            border-radius: var(--radius-sm); list-style: none; /* Hide arrow */
+        }
+        .accordion summary::-webkit-details-marker { display: none; }
+        .accordion[open] summary { border-bottom-left-radius: 0; border-bottom-right-radius: 0; }
+        .accordion-content {
+            padding: 1rem; border: 1px solid var(--gold-dark); border-top: none;
+            border-bottom-left-radius: var(--radius-sm); border-bottom-right-radius: var(--radius-sm);
+            background: rgba(0,0,0,0.2); display: flex; flex-direction: column; gap: 1rem;
+        }
+        .settings-grid, .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; }
+        .setting-item, .stat-item { display: flex; flex-direction: column; gap: 0.25rem; }
+        .setting-item label, .stat-item-label { font-size: 0.9rem; color: rgba(255,255,255,0.7); }
+        .stat-item-value { font-size: 1.1rem; font-weight: 600; }
+        .setting-item select, .setting-item input { background: var(--dark-bg); color: var(--light-text); border: 1px solid var(--gold-dark); padding: 0.5rem; border-radius: 4px; }
+        #reset-stats-btn { align-self: flex-start; }
+        
+        /* --- HANDS & CARDS SECTION --- */
+        .hand-area { margin: 2.5rem 0; }
+        .section-title {
+            font-size: 1.25rem; font-weight: 600; margin-bottom: 0.5rem;
+            color: var(--gold); display: flex; align-items: center; gap: 0.5rem;
+        }
+        .sum-display {
+            font-size: 1rem; font-weight: 400; color: rgba(255, 255, 255, 0.7);
+            margin-bottom: 1rem; min-height: 24px; text-align: center;
+        }
+        .cards-container {
+            display: flex; gap: 0.75rem; justify-content: center;
+            align-items: flex-start; flex-wrap: wrap;
+            min-height: 145px; perspective: 1000px;
+        }
+
+        /* --- Split Hand Container --- */
+        .split-hand-container {
+            border: 2px solid transparent;
+            border-radius: var(--radius-md);
+            padding: 1rem 0.5rem 0.5rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.5rem;
+            transition: border-color 0.3s ease;
+        }
+        .split-hand-container.active-hand { border-color: var(--gold); }
+        .split-hand-sum { font-weight: 600; }
+
+        /* --- Card Flip Animation CSS --- */
+        .card {
+            width: 100px;
+            height: 140px;
+            background-color: transparent;
+            perspective: 1000px;
+            flex-shrink: 0;
+        }
+
+        .card-inner {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            transition: transform 0.6s;
+            transform-style: preserve-3d;
+            transform: rotateY(180deg); /* Start face-down */
+        }
+
+        .card.flipped .card-inner {
+            transform: rotateY(0deg); /* Flip to face-up */
+        }
+
+        .card-front, .card-back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            -webkit-backface-visibility: hidden; /* Safari */
+            backface-visibility: hidden;
+            border-radius: var(--radius-sm);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        }
+        
+        .card-back {
+            background: linear-gradient(135deg, #4169e1, #1e40af);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 5rem;
+            color: rgba(255, 255, 255, 0.2);
+            transform: rotateY(180deg) translateZ(1px);
+        }
+
+        /* --- Card Face Styling --- */
+        .card-front {
+            background: var(--card-bg);
+            font-family: 'Poppins', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            padding: 4px;
+            height: 100%;
+            width: 100%;
+        }
+        .card-corner {
+            position: absolute;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            line-height: 1;
+            font-weight: 700;
+        }
+        .card-rank {
+            font-size: 1.25rem;
+        }
+        .card-suit {
+            font-size: 1rem;
+        }
+        .top-left {
+            top: 6px;
+            left: 8px;
+        }
+        .bottom-right {
+            bottom: 6px;
+            right: 8px;
+            transform: rotate(180deg);
+        }
+        .card-suit-center {
+            font-size: 3.5rem;
+            opacity: 0.9;
+        }
+
+        .card-front.red { color: var(--red-suit); }
+        .card-front.black { color: var(--black-suit); }
+
+        /* --- BETTING & CONTROLS --- */
+        .betting-section { text-align: center; padding: 1.5rem; background: rgba(0, 0, 0, 0.2); border-radius: var(--radius-md); margin-bottom: 2rem; }
+        .betting-section h3 { font-weight: 600; margin-bottom: 1rem; color: var(--gold); }
+        .betting-controls { display: flex; justify-content: center; gap: 0.75rem; flex-wrap: wrap; margin-bottom: 1rem; }
+        .chip-button {
+            width: 50px; height: 50px; border-radius: 50%; border: 3px solid white;
+            font-weight: 700; font-size: 0.9rem; cursor: pointer;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            color: white; display: grid; place-items: center;
+        }
+        .chip-button:hover:not(:disabled) { transform: scale(1.1); box-shadow: 0 0 15px var(--gold); }
+        .chip-5 { background: #dc143c; } .chip-10 { background: #4169e1; }
+        .chip-25 { background: #32cd32; } .chip-50 { background: #ff4500; }
+        .chip-100 { background: #333333; }
+        .bet-controls { display: flex; justify-content: center; gap: 0.5rem; margin: 1.5rem 0; flex-wrap: wrap; }
+        .bet-btn {
+            padding: 0.5rem 1rem; background: transparent; border: 2px solid var(--gold);
+            color: var(--gold); border-radius: 20px; font-weight: 600; cursor: pointer;
+            transition: background-color 0.2s, color 0.2s;
+        }
+        .bet-btn:hover:not(:disabled) { background-color: var(--gold); color: var(--dark-bg); }
+        .bet-btn:disabled { opacity: 0.5; cursor: not-allowed; border-color: grey; color: grey; }
+        .current-bet { font-size: 1.25rem; font-weight: 600; color: var(--light-text); }
+        .current-bet span { color: var(--gold); }
+        
+        /* --- GAME CONTROLS --- */
+        .game-controls { display: flex; justify-content: center; gap: 1rem; flex-wrap: wrap; margin-bottom: 2rem; }
+        .game-btn {
+            padding: 0.75rem 1.5rem; font-size: 1rem; font-weight: 700; border: none;
+            border-radius: 25px; cursor: pointer;
+            transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+            text-transform: uppercase; letter-spacing: 1px; color: white;
+        }
+        .game-btn:hover:not(:disabled) { transform: translateY(-3px); box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
+        .game-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        #deal-btn { background-color: #16a34a; } #hit-btn { background-color: #1e40af; }
+        #stand-btn { background-color: #b91c3c; } #double-btn { background-color: #ea580c; }
+        #split-btn { background-color: #ca8a04; } #surrender-btn { background-color: #7f1d1d; }
+        #reset-game-btn { background-color: #581c87; } /* Added */
+        .hidden { display: none !important; }
+
+        /* --- MESSAGE & PROMPT AREA --- */
+        .game-message {
+            text-align: center; font-size: 1.1rem; font-weight: 600;
+            padding: 1rem; border-radius: var(--radius-md); min-height: 60px;
+            display: flex; align-items: center; justify-content: center;
+            transition: all 0.3s ease; border: 2px solid transparent;
+        }
+        .message-win { background: rgba(22, 163, 74, 0.3); border-color: #16a34a; }
+        .message-lose { background: rgba(185, 28, 60, 0.3); border-color: #b91c3c; }
+        .message-tie { background: rgba(234, 88, 12, 0.3); border-color: #ea580c; }
+        .message-info { background: rgba(212, 175, 55, 0.2); border-color: var(--gold); }
+        
+        #insurance-prompt {
+            position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%);
+            background: var(--dark-bg); padding: 1rem; border-radius: var(--radius-sm);
+            border: 1px solid var(--gold); box-shadow: 0 0 20px rgba(0,0,0,0.5);
+            z-index: 10; display: flex; flex-direction: column; align-items: center; gap: 0.75rem;
+        }
+        #insurance-prompt button { margin: 0 0.5rem; }
+
+        /* --- Modal Overlays --- */
+        .modal-overlay {
+            position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.8); backdrop-filter: blur(5px);
+            z-index: 100; display: flex; flex-direction: column;
+            justify-content: center; align-items: center; gap: 1rem;
+            color: white; text-align: center;
+        }
+        .modal-overlay h2 { font-size: 3rem; color: var(--gold); }
+        .modal-overlay p { font-size: 1.2rem; }
+        .modal-overlay div { display: flex; gap: 1rem; }
+        
+        /* --- RESPONSIVENESS --- */
+        @media (max-width: 768px) {
+            body { padding: 1rem 0.5rem; }
+            .casino-table { padding: 1.5rem 1rem; }
+            .info-bar { flex-direction: column; align-items: stretch; text-align: center; }
+            .card { width: 75px; height: 105px; }
+            .card-rank { font-size: 1rem; }
+            .card-suit { font-size: 0.8rem; }
+            .card-suit-center { font-size: 2.5rem; }
+            .cards-container { min-height: 110px; }
+            .game-controls { gap: 0.5rem; }
+            .game-btn { padding: 0.6rem 1rem; font-size: 0.8rem; }
+            .chip-button { width: 45px; height: 45px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="casino-table">
+        <header class="game-header">
+            <h1 class="game-title">Blackjack Pro</h1>
+        </header>
+
+        <section class="info-bar">
+            <div class="bankroll-info">💰 Bankroll: $<span id="bankroll">500</span></div>
+            <div class="house-edge-control">
+                <label for="house-edge">House Edge:</label>
+                <input type="number" id="house-edge" min="0" max="10" step="0.1" value="0.5"><span>%</span>
+            </div>
+        </section>
+
+        <details class="accordion">
+            <summary>Game Settings</summary>
+            <div class="accordion-content">
+                <div class="settings-grid">
+                    <div class="setting-item">
+                        <label for="setting-decks">Decks in Shoe</label>
+                        <select id="setting-decks">
+                            <option value="1">1</option><option value="2">2</option>
+                            <option value="4">4</option><option value="6" selected>6</option><option value="8">8</option>
+                        </select>
+                    </div>
+                    <div class="setting-item">
+                        <label for="setting-soft17">Dealer on Soft 17</label>
+                        <select id="setting-soft17">
+                            <option value="stand" selected>Stand</option><option value="hit">Hit</option>
+                        </select>
+                    </div>
+                    <div class="setting-item">
+                        <label for="setting-surrender">Surrender</label>
+                        <select id="setting-surrender">
+                            <option value="none" selected>Not Allowed</option><option value="late">Late Surrender</option>
+                        </select>
+                    </div>
+                    <div class="setting-item">
+                        <label for="setting-das">Double After Split</label>
+                        <select id="setting-das">
+                            <option value="yes" selected>Allowed</option><option value="no">Not Allowed</option>
+                        </select>
+                    </div>
+                </div>
+                <p style="font-size: 0.8rem; opacity: 0.7;">Changing settings will shuffle a new shoe.</p>
+            </div>
+        </details>
+        
+        <details class="accordion">
+            <summary>Statistics</summary>
+            <div class="accordion-content">
+                <div class="stats-grid">
+                    <div class="stat-item"><span class="stat-item-label">Hands Played</span><span class="stat-item-value" id="stat-hands">0</span></div>
+                    <div class="stat-item"><span class="stat-item-label">Wins</span><span class="stat-item-value" id="stat-wins">0</span></div>
+                    <div class="stat-item"><span class="stat-item-label">Losses</span><span class="stat-item-value" id="stat-losses">0</span></div>
+                    <div class="stat-item"><span class="stat-item-label">Pushes</span><span class="stat-item-value" id="stat-pushes">0</span></div>
+                    <div class="stat-item"><span class="stat-item-label">Win Rate</span><span class="stat-item-value" id="stat-winrate">0%</span></div>
+                    <div class="stat-item"><span class="stat-item-label">Blackjacks</span><span class="stat-item-value" id="stat-bjs">0</span></div>
+                </div>
+                <button class="bet-btn" id="reset-stats-btn">Reset Stats</button>
+            </div>
+        </details>
+
+        <section class="hand-area dealer-section">
+            <h2 class="section-title">🎩 Dealer</h2>
+            <div class="sum-display">Sum: <span id="dealer-sum">?</span></div>
+            <div id="dealer-cards" class="cards-container"></div>
+        </section>
+        
+        <section class="hand-area player-section">
+            <h2 class="section-title">👤 Your Hands</h2>
+            <div class="sum-display">Sum: <span id="player-sum">0</span></div>
+            <div id="player-cards" class="cards-container"></div>
+        </section>
+
+        <section class="betting-section">
+            <h3>Place Your Bet</h3>
+            <div class="betting-controls">
+                <button class="chip-button chip-5" data-bet="5">$5</button>
+                <button class="chip-button chip-10" data-bet="10">$10</button>
+                <button class="chip-button chip-25" data-bet="25">$25</button>
+                <button class="chip-button chip-50" data-bet="50">$50</button>
+                <button class="chip-button chip-100" data-bet="100">$100</button>
+            </div>
+            <div class="current-bet">Current Bet: $<span id="current-bet">0</span></div>
+            <div class="bet-controls">
+                <button class="bet-btn" id="undo-bet-btn">Undo</button>
+                <button class="bet-btn" id="clear-bet-btn">Clear</button>
+                <button class="bet-btn" id="all-in-btn">All In</button>
+                <button class="bet-btn" id="repeat-bet-btn">Repeat Last</button>
+            </div>
+        </section>
+
+        <div class="game-controls">
+            <button id="deal-btn" class="game-btn">Deal</button>
+            <button id="hit-btn" class="game-btn" disabled>Hit</button>
+            <button id="stand-btn" class="game-btn" disabled>Stand</button>
+            <button id="double-btn" class="game-btn" disabled>Double</button>
+            <button id="split-btn" class="game-btn hidden">Split</button>
+            <button id="surrender-btn" class="game-btn hidden">Surrender</button>
+            <button id="reset-game-btn" class="game-btn">Reset Game</button>
+        </div>
+        
+        <div id="insurance-prompt" class="hidden">
+            <p>Dealer shows an Ace. Take insurance?</p>
+            <div>
+                <button id="insurance-yes-btn" class="game-btn">Yes</button>
+                <button id="insurance-no-btn" class="game-btn stand-btn">No</button>
+            </div>
+        </div>
+
+        <div id="game-message" class="game-message message-info">
+            Welcome! Set your rules, place your bet, and deal.
+        </div>
+        
+        <div id="game-over-overlay" class="modal-overlay hidden">
+            <h2>Game Over</h2>
+            <p>You've run out of money!</p>
+            <button id="new-game-btn" class="game-btn">Start New Game</button>
+        </div>
+
+        <div id="reset-confirm-overlay" class="modal-overlay hidden">
+            <h2>Reset Game?</h2>
+            <p>This will reset your bankroll and statistics. Are you sure?</p>
+            <div>
+                <button id="reset-confirm-yes-btn" class="game-btn">Yes, Reset</button>
+                <button id="reset-confirm-no-btn" class="game-btn">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+<script>
+/*---------- Blackjack Class (LOGIC) ----------*/
+class BlackjackGame {
+    constructor(options = {}) {
+        this.options = {
+            decks: 6,
+            standOnSoft17: true,
+            doubleAfterSplit: true,
+            resplitLimit: 4,
+            allowLateSurrender: true,
+            houseEdgePercent: 0.5,
+            ...options,
+        };
+        this.resetShoe();
+        this.resetRoundState();
+    }
+
+    resetShoe() {
+        this.shoe = [];
+        const suits = ['♠', '♥', '♦', '♣'];
+        const values = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
+        for (let d = 0; d < this.options.decks; d++) {
+            for (let s of suits) for (let v of values) this.shoe.push({ value: v, suit: s });
+        }
+        this.shuffle();
+    }
+
+    shuffle() {
+        for (let i = this.shoe.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [this.shoe[i], this.shoe[j]] = [this.shoe[j], this.shoe[i]];
+        }
+    }
+
+    draw() {
+        if (this.shoe.length < 20) this.resetShoe();
+        return this.shoe.pop();
+    }
+
+    resetRoundState() {
+        this.playerHands = [];
+        this.dealer = { cards: [], hidden: null };
+        this.insuranceCents = 0;
+        this.roundInProgress = false;
+        this.currentHandIndex = 0;
+    }
+
+    makeHand(betCents) {
+        return { cards: [], betCents, doubled: false, surrendered: false, finished: false, result: null, isSplitAce: false };
+    }
+
+    static handValue(cards) {
+        let hardSum = 0;
+        let aces = 0;
+        for (const c of cards) {
+            if (c.value === 'A') {
+                aces++;
+                hardSum += 1;
+            } else if (['J', 'Q', 'K', '10'].includes(c.value)) {
+                hardSum += 10;
+            } else {
+                hardSum += parseInt(c.value, 10);
+            }
+        }
+        let sum = hardSum;
+        const soft = aces > 0 && hardSum + 10 <= 21;
+        if (soft) sum += 10;
+        return { sum, soft };
+    }
+
+    dealInitial(betCents) {
+        this.resetRoundState();
+        this.roundInProgress = true;
+        const hand = this.makeHand(betCents);
+        hand.cards.push(this.draw(), this.draw());
+        this.playerHands.push(hand);
+        this.dealer.cards.push(this.draw());
+        this.dealer.hidden = this.draw();
+
+        if (hand.isSplitAce) {
+            hand.finished = true;
+        }
+    }
+
+    canSplit(handIndex) {
+        const h = this.playerHands[handIndex];
+        if (!h || h.cards.length !== 2 || this.playerHands.length >= this.options.resplitLimit) return false;
+        const v0 = h.cards[0].value, v1 = h.cards[1].value;
+        const tens = ['10', 'J', 'Q', 'K'];
+        return v0 === v1 || (tens.includes(v0) && tens.includes(v1));
+    }
+
+    hit(handIndex) {
+        const h = this.playerHands[handIndex];
+        if (!h || h.finished || h.surrendered) return;
+        h.cards.push(this.draw());
+        const hv = BlackjackGame.handValue(h.cards);
+        if (hv.sum >= 21) h.finished = true;
+    }
+
+    doubleDown(handIndex) {
+        const h = this.playerHands[handIndex];
+        if (!h || h.finished || h.doubled || h.cards.length !== 2) throw new Error('Double not allowed');
+        if (this.playerHands.length > 1 && !this.options.doubleAfterSplit) throw new Error('Double after split not allowed');
+        h.doubled = true;
+        h.betCents *= 2;
+        h.cards.push(this.draw());
+        h.finished = true;
+    }
+
+    surrender(handIndex) {
+        const h = this.playerHands[handIndex];
+        if (!h || h.finished || h.cards.length !== 2 || !this.options.allowLateSurrender) throw new Error('Surrender not allowed');
+        h.surrendered = true;
+        h.finished = true;
+    }
+
+    split(handIndex) {
+        if (!this.canSplit(handIndex)) throw new Error('Cannot split');
+        const originalHand = this.playerHands[handIndex];
+        const newHand = this.makeHand(originalHand.betCents);
+        
+        const isAceSplit = originalHand.cards[0].value === 'A';
+        newHand.cards.push(originalHand.cards.pop());
+        originalHand.cards.push(this.draw());
+        newHand.cards.push(this.draw());
+        
+        if (isAceSplit) {
+            originalHand.isSplitAce = true;
+            newHand.isSplitAce = true;
+            originalHand.finished = true;
+            newHand.finished = true;
+        }
+
+        this.playerHands.splice(handIndex + 1, 0, newHand);
+    }
+    
+    takeInsurance(amountCents) { this.insuranceCents = amountCents; }
+
+    playDealer() {
+        if (this.dealer.hidden) this.dealer.cards.unshift(this.dealer.hidden);
+        this.dealer.hidden = null;
+        while (true) {
+            const hv = BlackjackGame.handValue(this.dealer.cards);
+            if (hv.sum > 17) break;
+            if (hv.sum < 17) { this.dealer.cards.push(this.draw()); continue; }
+            if (hv.soft && !this.options.standOnSoft17) { this.dealer.cards.push(this.draw()); continue; }
+            break;
+        }
+    }
+
+    settle() {
+        const allPlayerHandsDone = this.playerHands.every(h => h.finished || h.surrendered);
+        if (!allPlayerHandsDone) throw new Error("Can't settle, player turn not over.");
+
+        const dealerTempCards = this.dealer.hidden ? [this.dealer.hidden, ...this.dealer.cards] : this.dealer.cards;
+        const dealerHasBJ = BlackjackGame.handValue(dealerTempCards).sum === 21 && dealerTempCards.length === 2;
+        
+        if (this.playerHands.some(h => !h.surrendered && BlackjackGame.handValue(h.cards).sum <= 21)) {
+            this.playDealer();
+        } else {
+            if (this.dealer.hidden) this.dealer.cards.unshift(this.dealer.hidden);
+            this.dealer.hidden = null;
+        }
+
+        const dealerValue = BlackjackGame.handValue(this.dealer.cards).sum;
+        let netPayoutCents = 0;
+        const perHand = [];
+        
+        for (let h of this.playerHands) {
+            const hv = BlackjackGame.handValue(h.cards);
+            let result = null, handPayout = 0, profit = 0;
+            const stake = h.betCents / (h.doubled ? 2 : 1);
+
+            if (h.surrendered) {
+                result = 'surrender'; handPayout = stake / 2;
+            } else if (hv.sum === 21 && h.cards.length === 2 && !h.isSplitAce) {
+                result = dealerHasBJ ? 'push' : 'blackjack';
+                profit = dealerHasBJ ? 0 : Math.floor(stake * 1.5);
+                handPayout = stake + profit;
+            } else if (hv.sum > 21) {
+                result = 'bust'; handPayout = 0;
+            } else if (dealerHasBJ) {
+                result = 'dealer-blackjack'; handPayout = 0;
+            } else if (dealerValue > 21) {
+                result = 'dealer-bust';
+                profit = h.betCents;
+                handPayout = h.betCents * 2;
+            } else if (hv.sum > dealerValue) {
+                result = 'player-win';
+                profit = h.betCents;
+                handPayout = h.betCents * 2;
+            } else if (hv.sum < dealerValue) {
+                result = 'dealer-win'; handPayout = 0;
+            } else {
+                result = 'push'; handPayout = h.betCents;
+            }
+
+            if (profit > 0) {
+                const commission = Math.round(profit * (this.options.houseEdgePercent / 100));
+                handPayout -= commission;
+            }
+            
+            perHand.push({ result, payout: handPayout, stake: h.betCents });
+            netPayoutCents += handPayout;
+        }
+
+        let insurancePayout = (this.insuranceCents > 0 && dealerHasBJ) ? this.insuranceCents * 3 : 0;
+        return { perHand, netPayoutCents, insurancePayout, dealerCards: this.dealer.cards, dealerValue };
+    }
+}
+
+/*---------- Persistence & Stats ----------*/
+const STORAGE_KEY = 'bj_pro_game_v2';
+const DEFAULT_STATE = {
+    bankrollCents: 50000,
+    stats: { handsPlayed: 0, wins: 0, losses: 0, pushes: 0, blackjacks: 0 },
+    settings: {
+        decks: 6, standOnSoft17: 'stand', allowLateSurrender: 'late',
+        doubleAfterSplit: 'yes', houseEdge: 0.5
+    }
+};
+
+function loadState() {
+    try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (!raw) return JSON.parse(JSON.stringify(DEFAULT_STATE));
+        const saved = JSON.parse(raw);
+        return { ...JSON.parse(JSON.stringify(DEFAULT_STATE)), ...saved };
+    } catch (e) {
+        console.error("Failed to load state:", e);
+        return JSON.parse(JSON.stringify(DEFAULT_STATE));
+    }
+}
+function saveState(state) {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+}
+
+/*---------- UI Controller ----------*/
+document.addEventListener('DOMContentLoaded', () => {
+    /* --- DOM element selectors --- */
+    const dom = {
+        bankroll: document.getElementById('bankroll'),
+        currentBet: document.getElementById('current-bet'),
+        dealerSum: document.getElementById('dealer-sum'),
+        playerSum: document.getElementById('player-sum'),
+        playerCards: document.getElementById('player-cards'),
+        dealerCards: document.getElementById('dealer-cards'),
+        message: document.getElementById('game-message'),
+        dealBtn: document.getElementById('deal-btn'),
+        hitBtn: document.getElementById('hit-btn'),
+        standBtn: document.getElementById('stand-btn'),
+        doubleBtn: document.getElementById('double-btn'),
+        splitBtn: document.getElementById('split-btn'),
+        surrenderBtn: document.getElementById('surrender-btn'),
+        resetGameBtn: document.getElementById('reset-game-btn'),
+        chipButtons: document.querySelectorAll('.chip-button'),
+        bettingControls: document.querySelector('.betting-controls'),
+        clearBetBtn: document.getElementById('clear-bet-btn'),
+        undoBetBtn: document.getElementById('undo-bet-btn'),
+        allInBtn: document.getElementById('all-in-btn'),
+        repeatBetBtn: document.getElementById('repeat-bet-btn'),
+        settingDecks: document.getElementById('setting-decks'),
+        settingSoft17: document.getElementById('setting-soft17'),
+        settingSurrender: document.getElementById('setting-surrender'),
+        settingDAS: document.getElementById('setting-das'),
+        houseEdgeInput: document.getElementById('house-edge'),
+        statHands: document.getElementById('stat-hands'),
+        statWins: document.getElementById('stat-wins'),
+        statLosses: document.getElementById('stat-losses'),
+        statPushes: document.getElementById('stat-pushes'),
+        statWinrate: document.getElementById('stat-winrate'),
+        statBJs: document.getElementById('stat-bjs'),
+        resetStatsBtn: document.getElementById('reset-stats-btn'),
+        insurancePrompt: document.getElementById('insurance-prompt'),
+        insuranceYesBtn: document.getElementById('insurance-yes-btn'),
+        insuranceNoBtn: document.getElementById('insurance-no-btn'),
+        gameOverOverlay: document.getElementById('game-over-overlay'),
+        newGameBtn: document.getElementById('new-game-btn'),
+        resetConfirmOverlay: document.getElementById('reset-confirm-overlay'),
+        resetConfirmYesBtn: document.getElementById('reset-confirm-yes-btn'),
+        resetConfirmNoBtn: document.getElementById('reset-confirm-no-btn'),
+    };
+    
+    /* --- Global UI state --- */
+    const ui = {
+        currentBetCents: 0,
+        lastBetCents: 0,
+        bettingHistory: [],
+        game: null, 
+        state: loadState(),
+        isAnimating: false,
+    };
+    
+    const util = {
+        centsFromDollars: d => Math.round(Number(d) * 100),
+        dollarsFromCents: c => (c / 100).toFixed(2),
+        sleep: ms => new Promise(res => setTimeout(res, ms)),
+    };
+    
+    function playSound(soundName) {
+        // Placeholder for sound effects
+    }
+
+    /* --- Display & UI Updates --- */
+    function updateDisplay() {
+        dom.bankroll.textContent = util.dollarsFromCents(ui.state.bankrollCents);
+        dom.currentBet.textContent = util.dollarsFromCents(ui.currentBetCents);
+        renderDealerCards();
+        renderPlayerCards();
+        updateButtons();
+        updateStats();
+    }
+    
+    function updateButtons() {
+        const inProgress = ui.game.roundInProgress;
+        const bettingPhase = !inProgress;
+        const playerTurn = inProgress && !ui.isAnimating;
+
+        dom.dealBtn.disabled = !bettingPhase || ui.currentBetCents === 0 || ui.currentBetCents > ui.state.bankrollCents;
+        [...dom.chipButtons, dom.clearBetBtn, dom.undoBetBtn, dom.allInBtn, dom.repeatBetBtn].forEach(btn => btn.disabled = inProgress);
+
+        dom.hitBtn.disabled = !playerTurn;
+        dom.standBtn.disabled = !playerTurn;
+
+        const currentHand = ui.game.playerHands[ui.game.currentHandIndex];
+        let canDouble = false, canSplit = false, canSurrender = false;
+        
+        if(playerTurn && currentHand && !currentHand.finished) {
+            const canAffordDouble = ui.state.bankrollCents >= currentHand.betCents;
+            const canAffordSplit = ui.state.bankrollCents >= currentHand.betCents;
+
+            if (currentHand.cards.length === 2 && !currentHand.doubled) {
+                canDouble = canAffordDouble && (ui.game.playerHands.length === 1 || ui.game.options.doubleAfterSplit);
+                canSplit = ui.game.canSplit(ui.game.currentHandIndex) && canAffordSplit;
+                canSurrender = ui.game.options.allowLateSurrender;
+            }
+        }
+        
+        dom.doubleBtn.disabled = !canDouble;
+        dom.splitBtn.classList.toggle('hidden', !canSplit);
+        dom.surrenderBtn.classList.toggle('hidden', !canSurrender);
+        dom.surrenderBtn.disabled = !canSurrender;
+    }
+    
+    function updateStats() {
+        const { handsPlayed, wins, losses, pushes, blackjacks } = ui.state.stats;
+        dom.statHands.textContent = handsPlayed;
+        dom.statWins.textContent = wins;
+        dom.statLosses.textContent = losses;
+        dom.statPushes.textContent = pushes;
+        dom.statBJs.textContent = blackjacks;
+        const winRate = (wins + losses > 0) ? ((wins / (wins + losses)) * 100).toFixed(1) : "0.0";
+        dom.statWinrate.textContent = `${isNaN(winRate) ? '0.0' : winRate}%`;
+    }
+
+    function showMessage(message, type = 'info') {
+        dom.message.innerHTML = message;
+        dom.message.className = `game-message message-${type}`;
+    }
+
+    /* --- Card Rendering --- */
+    function renderDealerCards() {
+        dom.dealerCards.innerHTML = '';
+        ui.game.dealer.cards.forEach(c => dom.dealerCards.appendChild(createCardElement(c, false, false))); // Render face-up, no animation
+        if (ui.game.dealer.hidden) {
+            dom.dealerCards.appendChild(createCardElement(null, true, false)); // Render face-down
+        }
+        
+        // Show dealer's up-card sum during player's turn
+        if (ui.game.roundInProgress && ui.game.dealer.hidden) {
+            dom.dealerSum.textContent = BlackjackGame.handValue(ui.game.dealer.cards).sum;
+        } else {
+            // Show final sum after dealer's turn or if round is over
+            const finalDealerCards = ui.game.dealer.hidden ? [ui.game.dealer.hidden, ...ui.game.dealer.cards] : ui.game.dealer.cards;
+            const sum = BlackjackGame.handValue(finalDealerCards).sum;
+            dom.dealerSum.textContent = finalDealerCards.length > 0 ? sum : '?';
+        }
+    }
+
+    function renderPlayerCards() {
+        dom.playerCards.innerHTML = '';
+        const playerSumContainer = dom.playerSum.parentElement;
+
+        if (ui.game.playerHands.length === 0) {
+            playerSumContainer.classList.remove('hidden');
+            dom.playerSum.textContent = '0';
+            return;
+        }
+        
+        if (ui.game.playerHands.length > 1) {
+            playerSumContainer.classList.add('hidden');
+            ui.game.playerHands.forEach((hand, idx) => {
+                const handWrap = document.createElement('div');
+                handWrap.className = 'split-hand-container';
+                if (idx === ui.game.currentHandIndex && ui.game.roundInProgress) {
+                    handWrap.classList.add('active-hand');
+                }
+                
+                const cardsDiv = document.createElement('div');
+                cardsDiv.className = 'cards-container';
+                hand.cards.forEach(c => cardsDiv.appendChild(createCardElement(c, false, false))); // Render face-up, no animation
+
+                const sumDiv = document.createElement('div');
+                sumDiv.className = 'split-hand-sum';
+                const handVal = BlackjackGame.handValue(hand.cards);
+                let sumText = handVal.sum;
+                if(handVal.soft) sumText = `${handVal.sum - 10}/${handVal.sum}`;
+                sumDiv.textContent = `Sum: ${sumText}`;
+                
+                handWrap.appendChild(sumDiv);
+                handWrap.appendChild(cardsDiv);
+                dom.playerCards.appendChild(handWrap);
+            });
+        } else {
+            playerSumContainer.classList.remove('hidden');
+            const hand = ui.game.playerHands[0];
+            hand.cards.forEach(c => dom.playerCards.appendChild(createCardElement(c, false, false))); // Render face-up, no animation
+            updatePlayerSums(); // Update the sum display
+        }
+    }
+
+    // FIX: New function to only update the sum displays without re-rendering cards.
+    function updatePlayerSums() {
+        const playerSumContainer = dom.playerSum.parentElement;
+        if (ui.game.playerHands.length === 0) {
+            playerSumContainer.classList.remove('hidden');
+            dom.playerSum.textContent = '0';
+            return;
+        }
+
+        if (ui.game.playerHands.length > 1) {
+            playerSumContainer.classList.add('hidden');
+            ui.game.playerHands.forEach((hand, idx) => {
+                const handVal = BlackjackGame.handValue(hand.cards);
+                let sumText = handVal.sum;
+                if (handVal.soft) sumText = `${handVal.sum - 10}/${handVal.sum}`;
+                
+                const handWrap = dom.playerCards.children[idx];
+                if (handWrap) {
+                    const sumDiv = handWrap.querySelector('.split-hand-sum');
+                    if (sumDiv) sumDiv.textContent = `Sum: ${sumText}`;
+                }
+            });
+        } else {
+            playerSumContainer.classList.remove('hidden');
+            const hand = ui.game.playerHands[0];
+            const handVal = BlackjackGame.handValue(hand.cards);
+            let sumText = handVal.sum;
+            if (handVal.soft) sumText = `${handVal.sum - 10}/${handVal.sum}`;
+            dom.playerSum.textContent = sumText;
+        }
+    }
+
+    function createCardElement(card, isHidden = false, shouldAnimate = true) {
+        const el = document.createElement('div');
+        el.className = 'card';
+
+        const inner = document.createElement('div');
+        inner.className = 'card-inner';
+
+        const back = document.createElement('div');
+        back.className = 'card-back';
+        back.innerHTML = '<span>&#x1F0A0;</span>'; // Unicode for card back
+
+        const front = document.createElement('div');
+        front.className = 'card-front';
+
+        if (!isHidden && card) {
+            const isRed = card.suit === '♥' || card.suit === '♦';
+            front.classList.add(isRed ? 'red' : 'black');
+            
+            const rank = card.value;
+            const suit = card.suit;
+            front.innerHTML = `
+                <div class="card-corner top-left">
+                    <div class="card-rank">${rank}</div>
+                    <div class="card-suit">${suit}</div>
+                </div>
+                <div class="card-suit-center">${suit}</div>
+                <div class="card-corner bottom-right">
+                    <div class="card-rank">${rank}</div>
+                    <div class="card-suit">${suit}</div>
+                </div>
+            `;
+        }
+        
+        inner.appendChild(back);
+        inner.appendChild(front);
+        el.appendChild(inner);
+
+        if (!isHidden) {
+            if (shouldAnimate) {
+                setTimeout(() => el.classList.add('flipped'), 10);
+            } else {
+                el.classList.add('flipped');
+            }
+        }
+        return el;
+    }
+
+    /* --- Betting --- */
+    function addToBet(amountDollars) {
+        if (ui.game.roundInProgress) return;
+        const addCents = util.centsFromDollars(amountDollars);
+        if (ui.currentBetCents + addCents > ui.state.bankrollCents) {
+            showMessage("Insufficient funds!", "info");
+            return;
+        }
+        ui.currentBetCents += addCents;
+        ui.bettingHistory.push(addCents);
+        playSound('chip');
+        dom.currentBet.textContent = util.dollarsFromCents(ui.currentBetCents);
+        updateButtons();
+    }
+    
+    const betActions = {
+        clear: () => {
+            if (ui.game.roundInProgress) return;
+            ui.currentBetCents = 0;
+            ui.bettingHistory = [];
+            dom.currentBet.textContent = '0.00';
+            updateButtons();
+        },
+        undo: () => {
+            if (ui.game.roundInProgress || ui.bettingHistory.length === 0) return;
+            const lastBet = ui.bettingHistory.pop();
+            ui.currentBetCents -= lastBet;
+            dom.currentBet.textContent = util.dollarsFromCents(ui.currentBetCents);
+            updateButtons();
+        },
+        allIn: () => {
+            if (ui.game.roundInProgress) return;
+            ui.currentBetCents = ui.state.bankrollCents;
+            ui.bettingHistory = [ui.state.bankrollCents];
+            dom.currentBet.textContent = util.dollarsFromCents(ui.currentBetCents);
+            updateButtons();
+        },
+        repeat: () => {
+            if (ui.game.roundInProgress) return;
+            if (!ui.lastBetCents) { showMessage("No previous bet to repeat!", "info"); return; }
+            if (ui.lastBetCents > ui.state.bankrollCents) { showMessage("Insufficient funds for last bet!", "info"); return; }
+            ui.currentBetCents = ui.lastBetCents;
+            ui.bettingHistory = [ui.lastBetCents];
+            dom.currentBet.textContent = util.dollarsFromCents(ui.currentBetCents);
+            updateButtons();
+        }
+    };
+
+    /* --- Game Actions --- */
+    async function handleDeal() {
+        if (dom.dealBtn.disabled) return;
+        ui.state.bankrollCents -= ui.currentBetCents;
+        ui.lastBetCents = ui.currentBetCents;
+        ui.bettingHistory = [];
+        
+        ui.isAnimating = true;
+        ui.game.dealInitial(ui.currentBetCents);
+        
+        // Clear board and update bankroll display before animation
+        dom.playerCards.innerHTML = '';
+        dom.dealerCards.innerHTML = '';
+        dom.bankroll.textContent = util.dollarsFromCents(ui.state.bankrollCents);
+        updateButtons();
+
+        // Animate dealing
+        const pCard1 = createCardElement(ui.game.playerHands[0].cards[0]);
+        const dCard1 = createCardElement(ui.game.dealer.cards[0]);
+        const pCard2 = createCardElement(ui.game.playerHands[0].cards[1]);
+        const dCardHole = createCardElement(null, true);
+
+        await util.sleep(200); playSound('card');
+        dom.playerCards.appendChild(pCard1);
+
+        await util.sleep(300); playSound('card');
+        dom.dealerCards.appendChild(dCard1);
+        
+        await util.sleep(300); playSound('card');
+        dom.playerCards.appendChild(pCard2);
+
+        await util.sleep(300); playSound('card');
+        dom.dealerCards.appendChild(dCardHole);
+        
+        await util.sleep(500);
+        
+        // FIX: Instead of a full re-render, just update the sums and buttons
+        updatePlayerSums();
+        dom.dealerSum.textContent = BlackjackGame.handValue(ui.game.dealer.cards).sum;
+        ui.isAnimating = false;
+        showMessage("Cards dealt! Good luck.", "info");
+        updateButtons();
+        
+        const playerHV = BlackjackGame.handValue(ui.game.playerHands[0].cards);
+        const dealerShowsAce = ui.game.dealer.cards[0]?.value === 'A';
+        if (playerHV.sum === 21) {
+            showMessage("Blackjack!", "win");
+            ui.game.playerHands[0].finished = true;
+            setTimeout(finalizeRound, 1000);
+        } else if (dealerShowsAce) {
+            await offerInsurance();
+            const dealerTempCards = [ui.game.dealer.hidden, ...ui.game.dealer.cards];
+            const dealerHasBJ = BlackjackGame.handValue(dealerTempCards).sum === 21;
+            if (dealerHasBJ) {
+                ui.game.playerHands.forEach(hand => hand.finished = true);
+                showMessage("Dealer has Blackjack.", 'lose');
+                setTimeout(finalizeRound, 1000);
+            }
+        }
+    }
+    
+    // FIX: Rewritten to avoid full re-render and only append the new card.
+    async function handleHit() {
+        if (dom.hitBtn.disabled || ui.isAnimating) return;
+        ui.isAnimating = true;
+        updateButtons();
+
+        playSound('card');
+        ui.game.hit(ui.game.currentHandIndex);
+        
+        const h = ui.game.playerHands[ui.game.currentHandIndex];
+        const newCardData = h.cards[h.cards.length - 1];
+        
+        const newCardEl = createCardElement(newCardData);
+        let targetContainer = ui.game.playerHands.length > 1 ? dom.playerCards.children[ui.game.currentHandIndex].querySelector('.cards-container') : dom.playerCards;
+        targetContainer.appendChild(newCardEl);
+
+        updatePlayerSums();
+        await util.sleep(400); 
+
+        if (h.finished) {
+            const sum = BlackjackGame.handValue(h.cards).sum;
+            if (sum > 21) showMessage(`Bust with ${sum}!`, 'lose');
+            setTimeout(advanceToNextHandOrResolve, 1000);
+        } else {
+            ui.isAnimating = false;
+            updateButtons();
+        }
+    }
+
+    // FIX: Rewritten to avoid full re-render.
+    async function handleDouble() {
+        if(dom.doubleBtn.disabled || ui.isAnimating) return;
+        ui.isAnimating = true;
+        updateButtons();
+
+        const h = ui.game.playerHands[ui.game.currentHandIndex];
+        ui.state.bankrollCents -= h.betCents;
+        dom.bankroll.textContent = util.dollarsFromCents(ui.state.bankrollCents);
+
+        ui.game.doubleDown(ui.game.currentHandIndex);
+        showMessage("Doubled down!", 'info');
+        
+        const newCardData = h.cards[h.cards.length - 1];
+        const newCardEl = createCardElement(newCardData);
+        let targetContainer = ui.game.playerHands.length > 1 ? dom.playerCards.children[ui.game.currentHandIndex].querySelector('.cards-container') : dom.playerCards;
+        targetContainer.appendChild(newCardEl);
+        
+        updatePlayerSums();
+        await util.sleep(600);
+        
+        setTimeout(advanceToNextHandOrResolve, 1000);
+    }
+    
+    function handleStand() {
+        if(dom.standBtn.disabled || ui.isAnimating) return;
+        ui.game.playerHands[ui.game.currentHandIndex].finished = true;
+        showMessage('You stand.', 'info');
+        advanceToNextHandOrResolve();
+    }
+
+    function handleSplit() {
+        if (dom.splitBtn.classList.contains('hidden') || ui.isAnimating) return;
+        try {
+            const hand = ui.game.playerHands[ui.game.currentHandIndex];
+            ui.state.bankrollCents -= hand.betCents;
+            ui.game.split(ui.game.currentHandIndex);
+            showMessage("Hand split.", 'info');
+            // Full re-render is acceptable here as the entire hand layout changes drastically.
+            renderPlayerCards();
+            updateButtons();
+        } catch (e) { showMessage("Split failed: " + e.message, 'info'); }
+    }
+    
+    function handleSurrender() {
+        if(dom.surrenderBtn.disabled || ui.isAnimating) return;
+        try {
+            ui.game.surrender(ui.game.currentHandIndex);
+            showMessage("You surrendered. Half your bet is returned.", 'info');
+            advanceToNextHandOrResolve();
+        } catch(e) { showMessage("Surrender not allowed.", 'info'); }
+    }
+    
+    function offerInsurance() {
+        return new Promise(resolve => {
+            const maxInsurance = Math.floor(ui.game.playerHands[0].betCents / 2);
+            if (maxInsurance <= 0 || ui.state.bankrollCents < maxInsurance) {
+                resolve(false);
+                return;
+            }
+            
+            dom.insurancePrompt.querySelector('p').textContent = `Take insurance for $${util.dollarsFromCents(maxInsurance)}?`;
+            dom.insurancePrompt.classList.remove('hidden');
+
+            const handleYes = () => {
+                cleanup();
+                ui.state.bankrollCents -= maxInsurance;
+                ui.game.takeInsurance(maxInsurance);
+                dom.bankroll.textContent = util.dollarsFromCents(ui.state.bankrollCents);
+                showMessage(`Insurance placed: $${util.dollarsFromCents(maxInsurance)}.`, 'info');
+                resolve(true);
+            };
+
+            const handleNo = () => {
+                cleanup();
+                showMessage('Insurance declined.', 'info');
+                resolve(false);
+            };
+            
+            const cleanup = () => {
+                dom.insuranceYesBtn.removeEventListener('click', handleYes);
+                dom.insuranceNoBtn.removeEventListener('click', handleNo);
+                dom.insurancePrompt.classList.add('hidden');
+            };
+
+            dom.insuranceYesBtn.addEventListener('click', handleYes, { once: true });
+            dom.insuranceNoBtn.addEventListener('click', handleNo, { once: true });
+        });
+    }
+
+    // FIX: Rewritten to only update active hand CSS and buttons, preventing re-flips.
+    function advanceToNextHandOrResolve() {
+        const nextHandIndex = ui.game.playerHands.findIndex((h, i) => !h.finished && i > ui.game.currentHandIndex);
+        if (nextHandIndex !== -1) {
+            const oldHandIndex = ui.game.currentHandIndex;
+            ui.game.currentHandIndex = nextHandIndex;
+
+            const handElements = dom.playerCards.querySelectorAll('.split-hand-container');
+            if (handElements[oldHandIndex]) handElements[oldHandIndex].classList.remove('active-hand');
+            if (handElements[nextHandIndex]) handElements[nextHandIndex].classList.add('active-hand');
+            
+            updateButtons();
+            showMessage(`Playing hand ${nextHandIndex + 1}`, 'info');
+        } else {
+            ui.isAnimating = true; // Lock controls before dealer's turn
+            updateButtons();
+            finalizeRound();
+        }
+    }
+    
+    async function finalizeRound() {
+        const res = ui.game.settle();
+        
+        // Flip the dealer's hole card
+        const holeCardEl = dom.dealerCards.querySelector('.card:not(.flipped)');
+        if (holeCardEl) {
+            const cardData = ui.game.dealer.cards[0];
+            const front = holeCardEl.querySelector('.card-front');
+            const isRed = cardData.suit === '♥' || cardData.suit === '♦';
+            front.classList.add(isRed ? 'red' : 'black');
+            
+            front.innerHTML = `
+                <div class="card-corner top-left"><div class="card-rank">${cardData.value}</div><div class="card-suit">${cardData.suit}</div></div>
+                <div class="card-suit-center">${cardData.suit}</div>
+                <div class="card-corner bottom-right"><div class="card-rank">${cardData.value}</div><div class="card-suit">${cardData.suit}</div></div>`;
+            holeCardEl.classList.add('flipped');
+        }
+        await util.sleep(600);
+        dom.dealerSum.textContent = BlackjackGame.handValue(ui.game.dealer.cards).sum;
+
+        // Animate dealer drawing cards
+        const initialDealerCardCount = ui.game.dealer.cards.length;
+        for (let i = initialDealerCardCount; i < res.dealerCards.length; i++) {
+            await util.sleep(500);
+            playSound('card');
+            const newCard = createCardElement(res.dealerCards[i]);
+            dom.dealerCards.appendChild(newCard);
+            dom.dealerSum.textContent = BlackjackGame.handValue(res.dealerCards.slice(0, i + 1)).sum;
+        }
+        
+        await util.sleep(500);
+
+        ui.state.bankrollCents += res.netPayoutCents + res.insurancePayout;
+        
+        res.perHand.forEach(h => {
+            ui.state.stats.handsPlayed++;
+            if (h.result === 'blackjack') { ui.state.stats.blackjacks++; ui.state.stats.wins++; }
+            else if (['player-win', 'dealer-bust'].includes(h.result)) { ui.state.stats.wins++; }
+            else if (h.result === 'push') { ui.state.stats.pushes++; }
+            else { ui.state.stats.losses++; }
+        });
+        
+        saveState(ui.state);
+
+        let finalMessage = `Dealer has ${res.dealerValue}. `;
+        const totalWager = res.perHand.reduce((acc, h) => acc + h.stake, 0);
+        const totalReturn = res.netPayoutCents + res.insurancePayout;
+        const totalProfit = totalReturn - totalWager;
+
+        if (res.perHand.length > 1) {
+             res.perHand.forEach((h, i) => {
+                 const outcome = h.result.replace(/[-_]/g, ' ').replace('player ','');
+                 finalMessage += `<br>Hand ${i+1}: <strong>${outcome}</strong>.`;
+             });
+        } else {
+            const singleOutcome = res.perHand[0].result.replace(/[-_]/g, ' ').replace('player ','');
+             finalMessage += ` You ${singleOutcome}.`;
+        }
+        
+        let messageType = 'tie';
+        if (totalProfit > 0) { messageType = 'win'; playSound('win'); }
+        else if (totalProfit < 0) { messageType = 'lose'; playSound('lose'); }
+        
+        showMessage(finalMessage, messageType);
+        
+        setTimeout(() => {
+            ui.game.resetRoundState();
+            ui.currentBetCents = 0;
+            updateDisplay(); // Full update to reset the board for the next round
+            showMessage("Place your next bet.", 'info');
+            checkGameOver();
+        }, 2000 + (res.perHand.length * 500));
+    }
+
+    function checkGameOver() {
+        if(ui.state.bankrollCents <= 0) {
+            dom.gameOverOverlay.classList.remove('hidden');
+        }
+    }
+
+    function startNewGame() {
+        ui.state = JSON.parse(JSON.stringify(DEFAULT_STATE));
+        saveState(ui.state);
+        applySettings();
+        dom.gameOverOverlay.classList.add('hidden');
+        updateDisplay();
+    }
+    
+    function applySettings() {
+        const settings = {
+            decks: parseInt(dom.settingDecks.value, 10),
+            standOnSoft17: dom.settingSoft17.value === 'stand',
+            allowLateSurrender: dom.settingSurrender.value === 'late',
+            doubleAfterSplit: dom.settingDAS.value === 'yes',
+            houseEdgePercent: parseFloat(dom.houseEdgeInput.value)
+        };
+        
+        ui.game = new BlackjackGame(settings);
+        
+        ui.state.settings = {
+            decks: dom.settingDecks.value,
+            standOnSoft17: dom.settingSoft17.value,
+            allowLateSurrender: dom.settingSurrender.value,
+            doubleAfterSplit: dom.settingDAS.value,
+            houseEdge: dom.houseEdgeInput.value
+        };
+        saveState(ui.state);
+        
+        if (!ui.game.roundInProgress) {
+            showMessage("New shoe ready with updated rules.", "info");
+        }
+    }
+
+    function loadSettingsFromState() {
+        const { settings } = ui.state;
+        dom.settingDecks.value = settings.decks;
+        dom.settingSoft17.value = settings.standOnSoft17;
+        dom.settingSurrender.value = settings.allowLateSurrender;
+        dom.settingDAS.value = settings.doubleAfterSplit;
+        dom.houseEdgeInput.value = settings.houseEdge;
+    }
+    
+    /* --- Event Listeners --- */
+    dom.dealBtn.addEventListener('click', handleDeal);
+    dom.hitBtn.addEventListener('click', handleHit);
+    dom.standBtn.addEventListener('click', handleStand);
+    dom.doubleBtn.addEventListener('click', handleDouble);
+    dom.splitBtn.addEventListener('click', handleSplit);
+    dom.surrenderBtn.addEventListener('click', handleSurrender);
+    
+    dom.chipButtons.forEach(btn => btn.addEventListener('click', () => addToBet(btn.dataset.bet)));
+    dom.clearBetBtn.addEventListener('click', betActions.clear);
+    dom.undoBetBtn.addEventListener('click', betActions.undo);
+    dom.allInBtn.addEventListener('click', betActions.allIn);
+    dom.repeatBetBtn.addEventListener('click', betActions.repeat);
+
+    [dom.settingDecks, dom.settingSoft17, dom.settingSurrender, dom.settingDAS, dom.houseEdgeInput].forEach(el => {
+        el.addEventListener('change', applySettings);
+    });
+
+    dom.resetStatsBtn.addEventListener('click', () => {
+        // NOTE: confirm() can be blocking. A custom modal would be better in a real app.
+        if (confirm("Are you sure you want to reset your statistics?")) {
+            ui.state.stats = JSON.parse(JSON.stringify(DEFAULT_STATE.stats));
+            saveState(ui.state);
+            updateStats();
+        }
+    });
+    
+    dom.newGameBtn.addEventListener('click', startNewGame);
+
+    dom.resetGameBtn.addEventListener('click', () => {
+        dom.resetConfirmOverlay.classList.remove('hidden');
+    });
+
+    dom.resetConfirmNoBtn.addEventListener('click', () => {
+        dom.resetConfirmOverlay.classList.add('hidden');
+    });
+
+    dom.resetConfirmYesBtn.addEventListener('click', () => {
+        startNewGame();
+        dom.resetConfirmOverlay.classList.add('hidden');
+    });
+    
+    /* --- Initial Load --- */
+    loadSettingsFromState();
+    applySettings();
+    updateDisplay();
+});
+</script>
+</body>
+</html>
+
