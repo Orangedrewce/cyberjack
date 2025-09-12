@@ -239,6 +239,12 @@ font-size: 1.25rem;
 text-align: center;
 }
 
+.chip-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    filter: grayscale(80%);
+    transform: translateY(0); /* Prevent hover effect on disabled chips */
+}
 .game-controls, .betting-controls, .bet-controls {
     display: flex;
     justify-content: center;
@@ -437,14 +443,27 @@ align-items: center;
 }
 
 @media (max-width: 480px) {
-    .panel { padding: 1rem;
-}
-    #player-hands-container, .game-controls { flex-direction: column; align-items: stretch; }
-    .card { width: 60px;
-height: 84px; margin-left: -30px; }
-    .card .rank { font-size: 1.2rem;
-}
-    .card .suit { font-size: 1.8rem; }
-    .chip-btn { width: 60px; height: 60px;
-font-size: 1rem; }
+    .panel {
+        padding: 1rem;
+    }
+    #player-hands-container, .game-controls {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    .card {
+        width: 60px;
+        height: 84px;
+        margin-left: -30px;
+    }
+    .card .rank {
+        font-size: 1.2rem;
+    }
+    .card .suit {
+        font-size: 1.8rem;
+    }
+    .chip-btn {
+        width: 60px;
+        height: 60px;
+        font-size: 1rem;
+    }
 }
