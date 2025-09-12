@@ -271,7 +271,8 @@ function checkInitialPlayerOptions() {
     const hand = playerHands[currentHandIndex];
     
     doubleBtn.disabled = !(bankroll >= hand.bet && hand.cards.length === 2);
-    splitBtn.disabled = !(hand.cards.length === 2 && getCardValue(hand.cards[0]) === getCardValue(hand.cards[1]) && bankroll >= hand.bet && playerHands.length < 4);
+    // Fix split logic: compare card face values (ranks), not point values
+    splitBtn.disabled = !(hand.cards.length === 2 && hand.cards[0].value === hand.cards[1].value && bankroll >= hand.bet && playerHands.length < 4);
 
     if (getHandSum(hand.cards) === 21) {
         showMessage("🎉 Blackjack!", "win");
