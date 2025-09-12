@@ -71,17 +71,17 @@ background-size: 35px 35px;
     max-width: 1200px;
 /* Reduced width to combat wasted space */
     margin: 0 auto;
-    padding: 2rem 1rem;
+    padding: 1rem;
     display: flex;
 flex-direction: column;
-    gap: 1.5rem; /* Reduced gap for a tighter feel */
+    gap: 0.75rem; /* COMPRESSION: Reduced gap */
 }
 
 .game-area {
     display: flex;
     flex-direction: column;
 align-items: center;
-    gap: 1.5rem;
+    gap: 1rem; /* COMPRESSION: Reduced gap */
 }
 
 #player-hands-container {
@@ -102,7 +102,7 @@ align-items: center;
 backdrop-filter: blur(10px);
     border: 1px solid var(--neon-cyan);
     border-radius: 16px;
-    padding: 1.5rem;
+    padding: 1rem; /* COMPRESSION: Reduced padding */
 box-shadow: 0 0 20px rgba(0, 255, 255, 0.15), inset 0 0 15px rgba(128, 0, 255, 0.1);
     width: 100%;
 }
@@ -133,7 +133,7 @@ color: var(--neon-cyan);
     letter-spacing: 0.5rem;
     text-transform: uppercase;
     animation: neonPulse 2s ease-in-out infinite;
-    margin-bottom: 1rem;
+    margin-bottom: 0.5rem; /* COMPRESSION: Reduced margin */
 }
 
 .section-title {
@@ -170,7 +170,7 @@ color: var(--text-primary);
 .current-bet-display {
     font-size: 1rem;
     color: var(--text-primary);
-    margin: 1.5rem 0;
+    margin: 0.75rem 0; /* COMPRESSION: Reduced margin */
     text-align: center;
 }
 
@@ -184,16 +184,16 @@ color: var(--text-primary);
 
 /* 3.3 CARDS */
 .cards-container {
-    min-height: 140px;
+    min-height: 115px; /* COMPRESSION: Reduced min-height */
     display: flex;
     justify-content: center;
     align-items: center;
-    padding: 1rem;
+    padding: 0.5rem; /* COMPRESSION: Reduced padding */
 }
 
 .card {
-    width: 90px;
-    height: 130px;
+    width: 75px; /* COMPRESSION: Reduced size */
+    height: 110px; /* COMPRESSION: Reduced size */
     border-radius: 10px;
     background: #1a1a1a;
     border: 1px solid;
@@ -202,7 +202,7 @@ box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
     flex-direction: column;
     justify-content: space-between;
     padding: 0.5rem;
-    margin-left: -40px;
+    margin-left: -35px; /* COMPRESSION: Adjusted margin for new width */
 transition: transform 0.3s ease, box-shadow 0.3s ease;
     position: relative;
 }
@@ -233,7 +233,7 @@ text-shadow: 0 0 8px var(--neon-cyan); }
     font-family: var(--font-primary);
 font-size: 1.25rem;
     font-weight: 700;
-    margin-bottom: 1.5rem; /* More space after title */
+    margin-bottom: 0.75rem; /* COMPRESSION: Reduced margin */
     color: var(--text-primary);
     text-transform: uppercase;
 text-align: center;
@@ -246,7 +246,7 @@ text-align: center;
     gap: 1rem;
     flex-wrap: wrap;
 }
-.betting-controls { margin-bottom: 1rem; }
+.betting-controls { margin-bottom: 0.5rem; } /* COMPRESSION: Reduced margin */
 
 .bet-btn {
     padding: 0.5rem 0.75rem;
@@ -304,9 +304,11 @@ box-shadow: 0 0 20px var(--neon-purple); }
 
 /* Poker Chip Buttons */
 .chip-btn {
-    width: 70px; height: 70px; border-radius: 50%;
+    width: 60px; height: 60px; /* COMPRESSION: Reduced size */
+    border-radius: 50%;
 background-color: #1a1a1a; border: 3px solid #fff;
-    font-family: var(--font-primary); font-size: 1.1rem; font-weight: 700; color: #fff; cursor: pointer;
+    font-family: var(--font-primary); font-size: 1rem; /* COMPRESSION: Reduced font size */
+    font-weight: 700; color: #fff; cursor: pointer;
     position: relative;
 box-shadow: 0 4px 0 #333, 0 8px 15px rgba(0, 0, 0, 0.6);
     transition: transform 0.2s ease-out, box-shadow 0.2s ease-out;
@@ -314,8 +316,9 @@ box-shadow: 0 4px 0 #333, 0 8px 15px rgba(0, 0, 0, 0.6);
 }
 .chip-btn::before {
     content: ''; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-    width: 50px;
-height: 50px; border-radius: 50%; border: 4px dashed; opacity: 0.7;
+    width: 42px; /* COMPRESSION: Reduced size */
+height: 42px; /* COMPRESSION: Reduced size */
+    border-radius: 50%; border: 4px dashed; opacity: 0.7;
     pointer-events: none;
 /* FIX: Makes the ring unclickable */
 }
@@ -354,8 +357,8 @@ justify-content: space-between;
     align-items: center;
     flex-wrap: wrap;
     gap: 1.5rem;
-    padding-bottom: 1.5rem;
-    margin-bottom: 1.5rem;
+    padding-bottom: 0.75rem; /* COMPRESSION: Reduced padding */
+    margin-bottom: 0.75rem; /* COMPRESSION: Reduced margin */
     border-bottom: 1px solid rgba(0, 255, 255, 0.2);
 }
 
