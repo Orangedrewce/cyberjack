@@ -4,7 +4,7 @@
     --border-color: rgba(255, 255, 255, 0.1);
     --primary-text: #e2e8f0;
     --secondary-text: #a0aec0;
-    --accent-color: #4299e1;
+    --accent-color: #2E6B9D;
     --accent-glow: rgba(66, 153, 225, 0.5);
     --win-color: #38a169;
     --lose-color: #e53e3e;
@@ -355,6 +355,22 @@ h3 {
     border-radius: 12px; 
     min-height: 58px; 
     transition: all 0.3s ease; 
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.game-message .info-panel {
+    display: flex; 
+    justify-content: space-between; 
+    align-items: center; 
+    flex-wrap: wrap; 
+    gap: 20px;
+}
+
+.game-message .message-text {
+    font-size: 1.1rem;
+    font-weight: 600;
 }
 
 .message-win { 
