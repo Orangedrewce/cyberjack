@@ -33,7 +33,8 @@ function resetGameState() {
         bankroll: state.bankroll === undefined ? 500 : state.bankroll,
         currentBet: 0,
         lastBet: state.lastBet || 0,
-        gamePhase: 'betting', // 'betting', 'player-turn', 'hand-resolving', 'dealer-turn', 'end-round'
+        gamePhase: 'betting', // 'betting', 'player-turn', 'dealer-turn', 'end-round'
+        handFinished: false, // Track if current hand is done
     };
 }
 
@@ -69,7 +70,6 @@ const shuffleDeck = (deck) => {
 
 const delay = (ms) => new Promise(res => setTimeout(res, ms));
 
-
 // ============================================================================
 // --- 4. UI & DISPLAY FUNCTIONS (ALL DOM MANIPULATION HERE) ---
 // ============================================================================
@@ -94,13 +94,22 @@ function updateUI() {
     bankrollEl.textContent = state.bankroll;
     currentBetEl.textContent = state.currentBet;
 
+    // Update dealer display
     dealerCardsEl.innerHTML = '';
     state.dealerCards.forEach(card => dealerCardsEl.appendChild(createCardElement(card)));
     if (state.dealerHiddenCard) {
         dealerCardsEl.appendChild(createCardElement(state.dealerHiddenCard, true));
     }
-    dealerSumEl.textContent = state.gamePhase === 'player-turn' ? getHandSum(state.dealerCards) : getHandSum([...state.dealerCards, ...(state.dealerHiddenCard ? [state.dealerHiddenCard] : [])]);
+    
+// Show correct dealer sum based on game phase
+if (state.gamePhase === 'player-turn' && state.dealerHiddenCard) {
+    dealerSumEl.textContent = getHandSum(state.dealerCards); // FIXED
+} else {
+    const allDealerCards = [...state.dealerCards, ...(state.dealerHiddenCard ? [state.dealerHiddenCard] : [])];
+    dealerSumEl.textContent = getHandSum(allDealerCards); // FIXED
+}
 
+    // Update player hands
     playerHandsContainer.innerHTML = '';
     state.playerHands.forEach((hand, index) => {
         let handWrapper = document.createElement('div');
@@ -108,31 +117,48 @@ function updateUI() {
         handWrapper.id = `player-hand-wrapper-${index}`;
         playerHandsContainer.appendChild(handWrapper);
 
+        const handSum = getHandSum(hand.cards);
+        const statusText = hand.finished ? (handSum > 21 ? ' (BUST)' : ' (STAND)') : '';
+
         handWrapper.innerHTML = `
-            <h2 class="section-title">Hand ${index + 1}</h2>
+            <h2 class="section-title">Hand ${index + 1}${statusText}</h2>
             <div class="bet-display">Bet: $${hand.bet}</div>
-            <div class="sum-display">Sum: <span>${getHandSum(hand.cards)}</span></div>
+            <div class="sum-display">Sum: <span>${handSum}</span></div>
             <div id="player-cards-${index}" class="cards-container"></div>
         `;
         
         const cardsContainer = handWrapper.querySelector(`#player-cards-${index}`);
         hand.cards.forEach(card => cardsContainer.appendChild(createCardElement(card)));
 
-        handWrapper.classList.toggle('active-hand', index === state.currentHandIndex && state.gamePhase === 'player-turn');
+        // Only highlight active hand if it's not finished
+        handWrapper.classList.toggle('active-hand', 
+            index === state.currentHandIndex && 
+            state.gamePhase === 'player-turn' && 
+            !hand.finished
+        );
     });
 
+    // Update button states
     const inBettingPhase = state.gamePhase === 'betting';
     bettingControls.style.display = inBettingPhase ? 'flex' : 'none';
     betControls.style.display = inBettingPhase ? 'flex' : 'none';
     dealBtn.disabled = !inBettingPhase || state.currentBet === 0;
 
-    const playerCanPlay = state.gamePhase === 'player-turn';
+    const currentHand = state.playerHands[state.currentHandIndex];
+    const playerCanPlay = state.gamePhase === 'player-turn' && currentHand && !currentHand.finished;
+    
     hitBtn.disabled = !playerCanPlay;
     standBtn.disabled = !playerCanPlay;
 
-    const currentHand = state.playerHands[state.currentHandIndex];
-    const canDouble = playerCanPlay && currentHand?.cards.length === 2 && state.bankroll >= currentHand.bet;
-    const canSplit = playerCanPlay && currentHand?.cards.length === 2 && getCardValue(currentHand.cards[0]) === getCardValue(currentHand.cards[1]) && state.bankroll >= currentHand.bet;
+    const canDouble = playerCanPlay && 
+                     currentHand?.cards.length === 2 && 
+                     state.bankroll >= currentHand.bet;
+    
+    const canSplit = playerCanPlay && 
+                    currentHand?.cards.length === 2 && 
+                    getCardValue(currentHand.cards[0]) === getCardValue(currentHand.cards[1]) && 
+                    state.bankroll >= currentHand.bet &&
+                    state.playerHands.length < 4; // Limit splits
     
     doubleBtn.disabled = !canDouble;
     splitBtn.disabled = !canSplit;
@@ -142,7 +168,6 @@ function displayMessage(text, type = 'info') {
     messageTextEl.textContent = text;
     messageTextEl.parentElement.className = `panel message-panel message-${type}`;
 }
-
 
 // ============================================================================
 // --- 5. GAME ACTIONS & CONTROL FLOW ---
@@ -158,25 +183,32 @@ async function deal() {
     state.bankroll -= state.currentBet;
     state.lastBet = state.currentBet;
     
-    if (state.deck.length < 52) {
+    // Shuffle new deck if needed
+    if (state.deck.length < 20) { // More cards needed for splits
         displayMessage("Shuffling new deck...");
         await delay(500);
         state.deck = shuffleDeck(createDeck());
     }
 
-    state.playerHands = [{ cards: [], bet: state.currentBet }];
+    // Initialize game state
+    state.playerHands = [{ cards: [], bet: state.currentBet, finished: false }];
     state.dealerCards = [];
+    state.dealerHiddenCard = null;
     state.currentHandIndex = 0;
 
     updateUI();
 
+    // Deal cards with animation
     await delay(400); state.playerHands[0].cards.push(state.deck.pop()); updateUI();
     await delay(400); state.dealerCards.push(state.deck.pop()); updateUI();
     await delay(400); state.playerHands[0].cards.push(state.deck.pop()); updateUI();
     await delay(400); state.dealerHiddenCard = state.deck.pop(); updateUI();
 
+    // Check for player blackjack
     if (getHandSum(state.playerHands[0].cards) === 21) {
         displayMessage("🎉 Blackjack!", "win");
+        state.playerHands[0].finished = true;
+        updateUI();
         await delay(1500);
         startDealerTurn();
     } else {
@@ -188,22 +220,37 @@ async function hit() {
     if (state.gamePhase !== 'player-turn') return;
 
     const hand = state.playerHands[state.currentHandIndex];
+    if (hand.finished) return;
+
     hand.cards.push(state.deck.pop());
+    updateUI();
     
     const sum = getHandSum(hand.cards);
     if (sum >= 21) {
-        state.gamePhase = 'hand-resolving'; // BUG FIX: Immediately change phase
-        updateUI(); // This disables the buttons instantly
-        if (sum > 21) displayMessage(`Hand ${state.currentHandIndex + 1} busts!`);
+        hand.finished = true;
+        updateUI();
+        
+        if (sum > 21) {
+            displayMessage(`Hand ${state.currentHandIndex + 1} busts!`, "lose");
+        } else {
+            displayMessage(`Hand ${state.currentHandIndex + 1} gets 21!`, "win");
+        }
+        
         await delay(1500);
         moveToNextHand();
-    } else {
-        updateUI(); // Normal update if no bust
     }
 }
 
 async function stand() {
     if (state.gamePhase !== 'player-turn') return;
+    
+    const hand = state.playerHands[state.currentHandIndex];
+    if (hand.finished) return;
+    
+    hand.finished = true;
+    updateUI();
+    displayMessage(`Hand ${state.currentHandIndex + 1} stands on ${getHandSum(hand.cards)}.`);
+    await delay(1000);
     moveToNextHand();
 }
 
@@ -211,20 +258,26 @@ async function doubleDown() {
     if (state.gamePhase !== 'player-turn') return;
     
     const hand = state.playerHands[state.currentHandIndex];
-    if (state.bankroll < hand.bet) {
-        displayMessage("Not enough funds to double down.");
+    if (hand.finished || state.bankroll < hand.bet || hand.cards.length !== 2) {
+        displayMessage("Cannot double down.");
         return;
     }
     
     state.bankroll -= hand.bet;
     hand.bet *= 2;
     hand.cards.push(state.deck.pop());
+    hand.finished = true; // Automatically stand after doubling
     
-    state.gamePhase = 'hand-resolving'; // Also disable buttons after doubling
     updateUI();
-
+    
+    const sum = getHandSum(hand.cards);
+    if (sum > 21) {
+        displayMessage(`Doubled down and busted with ${sum}!`, "lose");
+    } else {
+        displayMessage(`Doubled down and got ${sum}.`);
+    }
+    
     await delay(1500);
-    if (getHandSum(hand.cards) > 21) displayMessage(`Doubled down and busted!`);
     moveToNextHand();
 }
 
@@ -232,58 +285,98 @@ async function split() {
     if (state.gamePhase !== 'player-turn') return;
 
     const hand = state.playerHands[state.currentHandIndex];
-    if (state.bankroll < hand.bet) {
-        displayMessage("Not enough funds to split.");
+    if (hand.finished || 
+        state.bankroll < hand.bet || 
+        hand.cards.length !== 2 ||
+        getCardValue(hand.cards[0]) !== getCardValue(hand.cards[1]) ||
+        state.playerHands.length >= 4) {
+        displayMessage("Cannot split.");
         return;
     }
     
     state.bankroll -= hand.bet;
-    const secondCard = hand.cards.pop();
-    const newHand = { cards: [secondCard], bet: hand.bet };
     
+    // Create new hand with the second card
+    const secondCard = hand.cards.pop();
+    const newHand = { cards: [secondCard], bet: hand.bet, finished: false };
+    
+    // Insert new hand after current hand
     state.playerHands.splice(state.currentHandIndex + 1, 0, newHand);
 
+    // Deal new cards to both hands
     hand.cards.push(state.deck.pop());
     newHand.cards.push(state.deck.pop());
     
+    displayMessage(`Split into ${state.playerHands.length} hands. Playing Hand ${state.currentHandIndex + 1}.`);
     updateUI();
 }
 
 function moveToNextHand() {
-    if (state.currentHandIndex < state.playerHands.length - 1) {
-        state.currentHandIndex++;
-        state.gamePhase = 'player-turn'; // Return to player turn for the next hand
+    // Find next unfinished hand
+    let nextHandIndex = state.currentHandIndex + 1;
+    
+    while (nextHandIndex < state.playerHands.length && state.playerHands[nextHandIndex].finished) {
+        nextHandIndex++;
+    }
+    
+    if (nextHandIndex < state.playerHands.length) {
+        state.currentHandIndex = nextHandIndex;
         displayMessage(`Playing Hand ${state.currentHandIndex + 1}. Hit or Stand?`);
         updateUI();
     } else {
+        // All hands finished
         startDealerTurn();
     }
 }
 
 async function startDealerTurn() {
     state.gamePhase = 'dealer-turn';
-    updateUI(); // Hides player buttons
+    updateUI();
     
+    // Check if all player hands busted
+    const allHandsBusted = state.playerHands.every(hand => getHandSum(hand.cards) > 21);
+    
+    if (allHandsBusted) {
+        displayMessage("All hands busted. Dealer wins.", "lose");
+        await delay(2000);
+        endRound();
+        return;
+    }
+    
+    // Reveal hidden card
     if (state.dealerHiddenCard) {
+        displayMessage("Dealer reveals hidden card...");
+        await delay(1000);
         state.dealerCards.push(state.dealerHiddenCard);
         state.dealerHiddenCard = null;
         updateUI();
         await delay(800);
     }
 
+    // Dealer must hit on soft 17
     while (getHandSum(state.dealerCards) < 17) {
+        displayMessage(`Dealer has ${getHandSum(state.dealerCards)}, must hit...`);
+        await delay(800);
         state.dealerCards.push(state.deck.pop());
         updateUI();
         await delay(800);
     }
     
+    const finalSum = getHandSum(state.dealerCards);
+    if (finalSum > 21) {
+        displayMessage(`Dealer busts with ${finalSum}!`, "win");
+    } else {
+        displayMessage(`Dealer stands on ${finalSum}.`);
+    }
+    
+    await delay(1500);
     endRound();
 }
 
 function endRound() {
     state.gamePhase = 'end-round';
     const dealerSum = getHandSum(state.dealerCards);
-    const houseEdge = parseFloat(document.getElementById('house-edge').value) / 100 || 0;
+    const houseEdge = parseFloat(document.getElementById('house-edge')?.value || 0) / 100;
     let totalWinnings = 0;
     let finalMessage = "";
 
@@ -292,25 +385,30 @@ function endRound() {
         let handResult = `Hand ${index + 1}: `;
 
         if (playerSum > 21) {
-            handResult += `Busts (-$${hand.bet}). `;
-            // Bankroll was already reduced when the bet was placed
+            // Bust - already lost bet
+            handResult += `Busts (-$${hand.bet})`;
         } else if (dealerSum > 21 || playerSum > dealerSum) {
-            const isBlackjack = playerSum === 21 && hand.cards.length === 2;
+            // Player wins
+            const isBlackjack = playerSum === 21 && hand.cards.length === 2 && state.playerHands.length === 1;
             const payout = isBlackjack ? hand.bet * 1.5 : hand.bet;
             const winAmount = Math.round(payout * (1 - houseEdge));
-            state.bankroll += hand.bet + winAmount;
+            state.bankroll += hand.bet + winAmount; // Return bet plus winnings
             totalWinnings += winAmount;
-            handResult += `${isBlackjack ? 'Blackjack! Wins' : 'Wins'} (+$${winAmount})! `;
+            handResult += `${isBlackjack ? 'Blackjack! Wins' : 'Wins'} (+$${winAmount})`;
         } else if (playerSum < dealerSum) {
-            handResult += `Loses (-$${hand.bet}). `;
+            // Player loses - already lost bet
+            handResult += `Loses (-$${hand.bet})`;
         } else {
-            handResult += `Push. `;
+            // Push - return bet
+            handResult += `Push (bet returned)`;
             state.bankroll += hand.bet;
         }
-        finalMessage += handResult;
+        
+        finalMessage += handResult + (index < state.playerHands.length - 1 ? " | " : "");
     });
 
-    displayMessage(finalMessage, totalWinnings > 0 ? "win" : totalWinnings < 0 ? "lose" : "tie");
+    const messageType = totalWinnings > 0 ? "win" : (totalWinnings < 0 ? "lose" : "tie");
+    displayMessage(finalMessage, messageType);
 
     setTimeout(() => {
         if (state.bankroll <= 0) {
@@ -321,9 +419,8 @@ function endRound() {
             updateUI();
             displayMessage("Place your bet for the next round.");
         }
-    }, 3500);
+    }, 4000);
 }
-
 
 // ============================================================================
 // --- 6. EVENT LISTENERS & INITIALIZATION ---
@@ -332,7 +429,7 @@ function endRound() {
 function setupEventListeners() {
     bettingControls.addEventListener('click', (e) => {
         const chip = e.target.closest('.chip-btn');
-        if (chip) {
+        if (chip && state.gamePhase === 'betting') {
             const value = parseInt(chip.dataset.value);
             if (state.currentBet + value <= state.bankroll) {
                 state.currentBet += value;
@@ -343,9 +440,15 @@ function setupEventListeners() {
     });
 
     betControls.addEventListener('click', (e) => {
-        if (e.target.textContent === 'Clear') state.currentBet = 0;
-        if (e.target.textContent === 'Max') state.currentBet = state.bankroll;
-        if (e.target.textContent === 'Repeat' && state.lastBet <= state.bankroll) state.currentBet = state.lastBet;
+        if (state.gamePhase !== 'betting') return;
+        
+        if (e.target.textContent === 'Clear') {
+            state.currentBet = 0;
+        } else if (e.target.textContent === 'Max') {
+            state.currentBet = state.bankroll;
+        } else if (e.target.textContent === 'Repeat' && state.lastBet <= state.bankroll) {
+            state.currentBet = state.lastBet;
+        }
         updateUI();
     });
 
@@ -384,4 +487,3 @@ document.addEventListener('DOMContentLoaded', () => {
     setupEventListeners();
     updateUI();
 });
-
