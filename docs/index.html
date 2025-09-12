@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#1a202c">
-    <meta name="description" content="A Blackjack casino game progressive web app with split functionality.">
+    <meta name="description" content="A sleek Blackjack casino game progressive web app with split functionality.">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
@@ -12,7 +12,6 @@
     
     <title>Blackjack (with Split)</title>
 </head>
-<link rel="stylesheet" href="styles.css">
 <body>
     <div class="game-container">
         <header class="game-header">
@@ -52,17 +51,17 @@
                 <button class="bet-btn" onclick="repeatBet()">Repeat</button>
             </div>
             <div class="current-bet">Current Bet: $<span id="current-bet">0</span></div>
+            
+            <div class="game-controls">
+                <button id="deal-btn" class="game-btn btn-deal" onclick="dealCards()">Deal</button>
+                <button id="hit-btn" class="game-btn btn-hit" onclick="hit()" disabled>Hit</button>
+                <button id="stand-btn" class="game-btn btn-stand" onclick="stand()" disabled>Stand</button>
+                <button id="double-btn" class="game-btn btn-double" onclick="doubleDown()" disabled>Double</button>
+                <button id="split-btn" class="game-btn btn-split" onclick="split()" disabled>Split</button>
+            </div>
         </div>
 
         <div id="game-message" class="game-message message-info">Welcome! Place your bet and deal the cards.</div>
-        
-        <div class="game-controls">
-            <button id="deal-btn" class="game-btn btn-deal" onclick="dealCards()">Deal</button>
-            <button id="hit-btn" class="game-btn btn-hit" onclick="hit()" disabled>Hit</button>
-            <button id="stand-btn" class="game-btn btn-stand" onclick="stand()" disabled>Stand</button>
-            <button id="double-btn" class="game-btn btn-double" onclick="doubleDown()" disabled>Double</button>
-            <button id="split-btn" class="game-btn btn-split" onclick="split()" disabled>Split</button>
-        </div>
     </div>
 
     <script src="script.js"></script>
