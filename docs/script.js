@@ -123,7 +123,10 @@ function updateTextAndHighlights() {
 }
 
 const showMessage = (message, type) => { 
-    messageEl.textContent = message; 
+    const messageTextEl = document.querySelector('.message-text');
+    if (messageTextEl) {
+        messageTextEl.textContent = message;
+    }
     messageEl.className = 'game-message message-' + type; 
 };
 
