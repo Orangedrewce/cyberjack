@@ -105,6 +105,7 @@
         .stat-item-value { font-size: 1.1rem; font-weight: 600; }
         .setting-item select, .setting-item input { background: var(--dark-bg); color: var(--light-text); border: 1px solid var(--gold-dark); padding: 0.5rem; border-radius: 4px; }
         #reset-stats-btn { align-self: flex-start; }
+
         
         /* --- HANDS & CARDS SECTION --- */
         .hand-area { margin: 2.5rem 0; }
@@ -810,11 +811,9 @@ document.addEventListener('DOMContentLoaded', () => {
             dom.dealerCards.appendChild(createCardElement(null, true, false)); // Render face-down
         }
         
-        // Show dealer's up-card sum during player's turn
         if (ui.game.roundInProgress && ui.game.dealer.hidden) {
             dom.dealerSum.textContent = BlackjackGame.handValue(ui.game.dealer.cards).sum;
         } else {
-            // Show final sum after dealer's turn or if round is over
             const finalDealerCards = ui.game.dealer.hidden ? [ui.game.dealer.hidden, ...ui.game.dealer.cards] : ui.game.dealer.cards;
             const sum = BlackjackGame.handValue(finalDealerCards).sum;
             dom.dealerSum.textContent = finalDealerCards.length > 0 ? sum : '?';
@@ -842,7 +841,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 
                 const cardsDiv = document.createElement('div');
                 cardsDiv.className = 'cards-container';
-                hand.cards.forEach(c => cardsDiv.appendChild(createCardElement(c, false, false))); // Render face-up, no animation
+                hand.cards.forEach(c => cardsDiv.appendChild(createCardElement(c, false, false)));
 
                 const sumDiv = document.createElement('div');
                 sumDiv.className = 'split-hand-sum';
@@ -858,12 +857,11 @@ document.addEventListener('DOMContentLoaded', () => {
         } else {
             playerSumContainer.classList.remove('hidden');
             const hand = ui.game.playerHands[0];
-            hand.cards.forEach(c => dom.playerCards.appendChild(createCardElement(c, false, false))); // Render face-up, no animation
-            updatePlayerSums(); // Update the sum display
+            hand.cards.forEach(c => dom.playerCards.appendChild(createCardElement(c, false, false)));
+            updatePlayerSums();
         }
     }
 
-    // FIX: New function to only update the sum displays without re-rendering cards.
     function updatePlayerSums() {
         const playerSumContainer = dom.playerSum.parentElement;
         if (ui.game.playerHands.length === 0) {
@@ -904,7 +902,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const back = document.createElement('div');
         back.className = 'card-back';
-        back.innerHTML = '<span>&#x1F0A0;</span>'; // Unicode for card back
+        back.innerHTML = '<span>&#x1F0A0;</span>';
 
         const front = document.createElement('div');
         front.className = 'card-front';
@@ -993,6 +991,7 @@ document.addEventListener('DOMContentLoaded', () => {
     /* --- Game Actions --- */
     async function handleDeal() {
         if (dom.dealBtn.disabled) return;
+
         ui.state.bankrollCents -= ui.currentBetCents;
         ui.lastBetCents = ui.currentBetCents;
         ui.bettingHistory = [];
@@ -1000,13 +999,11 @@ document.addEventListener('DOMContentLoaded', () => {
         ui.isAnimating = true;
         ui.game.dealInitial(ui.currentBetCents);
         
-        // Clear board and update bankroll display before animation
         dom.playerCards.innerHTML = '';
         dom.dealerCards.innerHTML = '';
         dom.bankroll.textContent = util.dollarsFromCents(ui.state.bankrollCents);
         updateButtons();
 
-        // Animate dealing
         const pCard1 = createCardElement(ui.game.playerHands[0].cards[0]);
         const dCard1 = createCardElement(ui.game.dealer.cards[0]);
         const pCard2 = createCardElement(ui.game.playerHands[0].cards[1]);
@@ -1014,32 +1011,28 @@ document.addEventListener('DOMContentLoaded', () => {
 
         await util.sleep(200); playSound('card');
         dom.playerCards.appendChild(pCard1);
-
         await util.sleep(300); playSound('card');
         dom.dealerCards.appendChild(dCard1);
-        
         await util.sleep(300); playSound('card');
         dom.playerCards.appendChild(pCard2);
-
         await util.sleep(300); playSound('card');
         dom.dealerCards.appendChild(dCardHole);
-        
         await util.sleep(500);
         
-        // FIX: Instead of a full re-render, just update the sums and buttons
+        const playerHand = ui.game.playerHands[0];
+        const playerValue = BlackjackGame.handValue(playerHand.cards);
+
         updatePlayerSums();
         dom.dealerSum.textContent = BlackjackGame.handValue(ui.game.dealer.cards).sum;
         ui.isAnimating = false;
         showMessage("Cards dealt! Good luck.", "info");
         updateButtons();
         
-        const playerHV = BlackjackGame.handValue(ui.game.playerHands[0].cards);
-        const dealerShowsAce = ui.game.dealer.cards[0]?.value === 'A';
-        if (playerHV.sum === 21) {
+        if (playerValue.sum === 21) {
             showMessage("Blackjack!", "win");
             ui.game.playerHands[0].finished = true;
             setTimeout(finalizeRound, 1000);
-        } else if (dealerShowsAce) {
+        } else if (ui.game.dealer.cards[0]?.value === 'A') {
             await offerInsurance();
             const dealerTempCards = [ui.game.dealer.hidden, ...ui.game.dealer.cards];
             const dealerHasBJ = BlackjackGame.handValue(dealerTempCards).sum === 21;
@@ -1051,17 +1044,16 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
     
-    // FIX: Rewritten to avoid full re-render and only append the new card.
     async function handleHit() {
         if (dom.hitBtn.disabled || ui.isAnimating) return;
         ui.isAnimating = true;
         updateButtons();
-
         playSound('card');
         ui.game.hit(ui.game.currentHandIndex);
         
         const h = ui.game.playerHands[ui.game.currentHandIndex];
         const newCardData = h.cards[h.cards.length - 1];
+        const handValue = BlackjackGame.handValue(h.cards);
         
         const newCardEl = createCardElement(newCardData);
         let targetContainer = ui.game.playerHands.length > 1 ? dom.playerCards.children[ui.game.currentHandIndex].querySelector('.cards-container') : dom.playerCards;
@@ -1071,8 +1063,7 @@ document.addEventListener('DOMContentLoaded', () => {
         await util.sleep(400); 
 
         if (h.finished) {
-            const sum = BlackjackGame.handValue(h.cards).sum;
-            if (sum > 21) showMessage(`Bust with ${sum}!`, 'lose');
+            if (handValue.sum > 21) showMessage(`Bust with ${handValue.sum}!`, 'lose');
             setTimeout(advanceToNextHandOrResolve, 1000);
         } else {
             ui.isAnimating = false;
@@ -1080,7 +1071,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // FIX: Rewritten to avoid full re-render.
     async function handleDouble() {
         if(dom.doubleBtn.disabled || ui.isAnimating) return;
         ui.isAnimating = true;
@@ -1089,11 +1079,12 @@ document.addEventListener('DOMContentLoaded', () => {
         const h = ui.game.playerHands[ui.game.currentHandIndex];
         ui.state.bankrollCents -= h.betCents;
         dom.bankroll.textContent = util.dollarsFromCents(ui.state.bankrollCents);
-
         ui.game.doubleDown(ui.game.currentHandIndex);
-        showMessage("Doubled down!", 'info');
         
         const newCardData = h.cards[h.cards.length - 1];
+        const handValue = BlackjackGame.handValue(h.cards);
+        showMessage("Doubled down!", 'info');
+        
         const newCardEl = createCardElement(newCardData);
         let targetContainer = ui.game.playerHands.length > 1 ? dom.playerCards.children[ui.game.currentHandIndex].querySelector('.cards-container') : dom.playerCards;
         targetContainer.appendChild(newCardEl);
@@ -1107,7 +1098,8 @@ document.addEventListener('DOMContentLoaded', () => {
     function handleStand() {
         if(dom.standBtn.disabled || ui.isAnimating) return;
         ui.game.playerHands[ui.game.currentHandIndex].finished = true;
-        showMessage('You stand.', 'info');
+        const handValue = BlackjackGame.handValue(ui.game.playerHands[ui.game.currentHandIndex].cards).sum;
+        showMessage(`You stand with ${handValue}.`, 'info');
         advanceToNextHandOrResolve();
     }
 
@@ -1118,7 +1110,6 @@ document.addEventListener('DOMContentLoaded', () => {
             ui.state.bankrollCents -= hand.betCents;
             ui.game.split(ui.game.currentHandIndex);
             showMessage("Hand split.", 'info');
-            // Full re-render is acceptable here as the entire hand layout changes drastically.
             renderPlayerCards();
             updateButtons();
         } catch (e) { showMessage("Split failed: " + e.message, 'info'); }
@@ -1149,7 +1140,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 ui.state.bankrollCents -= maxInsurance;
                 ui.game.takeInsurance(maxInsurance);
                 dom.bankroll.textContent = util.dollarsFromCents(ui.state.bankrollCents);
-                showMessage(`Insurance placed: $${util.dollarsFromCents(maxInsurance)}.`, 'info');
+                showMessage(`Insurance placed.`, 'info');
                 resolve(true);
             };
 
@@ -1170,7 +1161,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // FIX: Rewritten to only update active hand CSS and buttons, preventing re-flips.
     function advanceToNextHandOrResolve() {
         const nextHandIndex = ui.game.playerHands.findIndex((h, i) => !h.finished && i > ui.game.currentHandIndex);
         if (nextHandIndex !== -1) {
@@ -1184,42 +1174,59 @@ document.addEventListener('DOMContentLoaded', () => {
             updateButtons();
             showMessage(`Playing hand ${nextHandIndex + 1}`, 'info');
         } else {
-            ui.isAnimating = true; // Lock controls before dealer's turn
+            ui.isAnimating = true; 
             updateButtons();
             finalizeRound();
         }
     }
     
     async function finalizeRound() {
+        // Capture the state of the dealer's initial two cards before settle() modifies the array.
+        const dealerCardsBeforePlay = [ui.game.dealer.cards[0], ui.game.dealer.hidden];
+        // Settle() plays the dealer's hand and returns the final results.
         const res = ui.game.settle();
         
-        // Flip the dealer's hole card
+        // --- FIX STARTS HERE ---
+    
+        // 1. Flip the hole card element in the DOM
         const holeCardEl = dom.dealerCards.querySelector('.card:not(.flipped)');
-        if (holeCardEl) {
-            const cardData = ui.game.dealer.cards[0];
+        if (holeCardEl && dealerCardsBeforePlay[1]) {
+            const holeCardData = dealerCardsBeforePlay[1]; // Correct hole card data
             const front = holeCardEl.querySelector('.card-front');
-            const isRed = cardData.suit === '♥' || cardData.suit === '♦';
+            const isRed = holeCardData.suit === '♥' || holeCardData.suit === '♦';
             front.classList.add(isRed ? 'red' : 'black');
-            
             front.innerHTML = `
-                <div class="card-corner top-left"><div class="card-rank">${cardData.value}</div><div class="card-suit">${cardData.suit}</div></div>
-                <div class="card-suit-center">${cardData.suit}</div>
-                <div class="card-corner bottom-right"><div class="card-rank">${cardData.value}</div><div class="card-suit">${cardData.suit}</div></div>`;
+                <div class="card-corner top-left"><div class="card-rank">${holeCardData.value}</div><div class="card-suit">${holeCardData.suit}</div></div>
+                <div class="card-suit-center">${holeCardData.suit}</div>
+                <div class="card-corner bottom-right"><div class="card-rank">${holeCardData.value}</div><div class="card-suit">${holeCardData.suit}</div></div>`;
             holeCardEl.classList.add('flipped');
         }
+        
+        // 2. Log the reveal and update the sum for the initial two cards
         await util.sleep(600);
-        dom.dealerSum.textContent = BlackjackGame.handValue(ui.game.dealer.cards).sum;
+        const initialSum = BlackjackGame.handValue(dealerCardsBeforePlay).sum;
+        dom.dealerSum.textContent = initialSum;
 
-        // Animate dealer drawing cards
-        const initialDealerCardCount = ui.game.dealer.cards.length;
-        for (let i = initialDealerCardCount; i < res.dealerCards.length; i++) {
+        // 3. Animate the drawing of any additional cards
+        // The DOM already has 2 cards. `res.dealerCards` has the final hand.
+        // We loop from index 2 to animate any cards the dealer "hit".
+        const initialDomCardCount = 2;
+        for (let i = initialDomCardCount; i < res.dealerCards.length; i++) {
             await util.sleep(500);
             playSound('card');
-            const newCard = createCardElement(res.dealerCards[i]);
-            dom.dealerCards.appendChild(newCard);
-            dom.dealerSum.textContent = BlackjackGame.handValue(res.dealerCards.slice(0, i + 1)).sum;
+            
+            // `res.dealerCards` is ordered [hidden, upcard, draw1, ...]. The new card is at index `i`.
+            const newCardData = res.dealerCards[i];
+            const newCardEl = createCardElement(newCardData);
+            dom.dealerCards.appendChild(newCardEl);
+            
+            // Update the sum display with each card drawn for a running total.
+            const currentVisibleHand = res.dealerCards.slice(0, i + 1);
+            const handValue = BlackjackGame.handValue(currentVisibleHand);
+            dom.dealerSum.textContent = handValue.sum;
         }
-        
+        // --- FIX ENDS HERE ---
+
         await util.sleep(500);
 
         ui.state.bankrollCents += res.netPayoutCents + res.insurancePayout;
@@ -1234,19 +1241,31 @@ document.addEventListener('DOMContentLoaded', () => {
         
         saveState(ui.state);
 
-        let finalMessage = `Dealer has ${res.dealerValue}. `;
+        let finalMessage = '';
         const totalWager = res.perHand.reduce((acc, h) => acc + h.stake, 0);
         const totalReturn = res.netPayoutCents + res.insurancePayout;
         const totalProfit = totalReturn - totalWager;
 
         if (res.perHand.length > 1) {
+             finalMessage = `Dealer has ${res.dealerValue}. `;
              res.perHand.forEach((h, i) => {
                  const outcome = h.result.replace(/[-_]/g, ' ').replace('player ','');
                  finalMessage += `<br>Hand ${i+1}: <strong>${outcome}</strong>.`;
              });
         } else {
-            const singleOutcome = res.perHand[0].result.replace(/[-_]/g, ' ').replace('player ','');
-             finalMessage += ` You ${singleOutcome}.`;
+            const singleHand = ui.game.playerHands[0];
+            const playerValue = BlackjackGame.handValue(singleHand.cards).sum;
+            switch(res.perHand[0].result) {
+                case 'player-win':      finalMessage = `Your ${playerValue} beats dealer's ${res.dealerValue}. You win.`; break;
+                case 'dealer-bust':     finalMessage = `Dealer busted with ${res.dealerValue}. You win.`; break;
+                case 'dealer-win':      finalMessage = `Dealer's ${res.dealerValue} beats your ${playerValue}. You lose.`; break;
+                case 'bust':            finalMessage = `You busted with ${playerValue}. You lose.`; break;
+                case 'push':            finalMessage = `You push with ${playerValue} against dealer's ${res.dealerValue}.`; break;
+                case 'blackjack':       finalMessage = `Blackjack! You win.`; break;
+                case 'dealer-blackjack':finalMessage = `Dealer has Blackjack. You lose.`; break;
+                case 'surrender':       finalMessage = `You surrendered.`; break;
+                default:                finalMessage = `Dealer has ${res.dealerValue}. You ${res.perHand[0].result}.`;
+            }
         }
         
         let messageType = 'tie';
@@ -1258,7 +1277,7 @@ document.addEventListener('DOMContentLoaded', () => {
         setTimeout(() => {
             ui.game.resetRoundState();
             ui.currentBetCents = 0;
-            updateDisplay(); // Full update to reset the board for the next round
+            updateDisplay();
             showMessage("Place your next bet.", 'info');
             checkGameOver();
         }, 2000 + (res.perHand.length * 500));
@@ -1331,7 +1350,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     dom.resetStatsBtn.addEventListener('click', () => {
-        // NOTE: confirm() can be blocking. A custom modal would be better in a real app.
         if (confirm("Are you sure you want to reset your statistics?")) {
             ui.state.stats = JSON.parse(JSON.stringify(DEFAULT_STATE.stats));
             saveState(ui.state);
@@ -1340,15 +1358,8 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     
     dom.newGameBtn.addEventListener('click', startNewGame);
-
-    dom.resetGameBtn.addEventListener('click', () => {
-        dom.resetConfirmOverlay.classList.remove('hidden');
-    });
-
-    dom.resetConfirmNoBtn.addEventListener('click', () => {
-        dom.resetConfirmOverlay.classList.add('hidden');
-    });
-
+    dom.resetGameBtn.addEventListener('click', () => dom.resetConfirmOverlay.classList.remove('hidden'));
+    dom.resetConfirmNoBtn.addEventListener('click', () => dom.resetConfirmOverlay.classList.add('hidden'));
     dom.resetConfirmYesBtn.addEventListener('click', () => {
         startNewGame();
         dom.resetConfirmOverlay.classList.add('hidden');
@@ -1362,4 +1373,6 @@ document.addEventListener('DOMContentLoaded', () => {
 </script>
 </body>
 </html>
+
+
 
