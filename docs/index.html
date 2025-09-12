@@ -3,66 +3,78 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="theme-color" content="#1a202c">
-    <meta name="description" content="A Blackjack casino game progressive web app.">
+    <meta name="theme-color" content="#0a0a0a">
+    <meta name="description" content="A sleek, cyberpunk-themed Blackjack casino game.">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
     
-    <title>Blackjack</title>
+    <title>Cyberjack</title>
 </head>
 <body>
     <div class="game-container">
         <header class="game-header">
-            <h1 class="game-title">BLACKJACK</h1>
+            <h1 class="game-title">CYBERJACK</h1>
         </header>
-        
-
+ 
+       
         <div class="game-area">
             <div class="hand-section dealer-section panel">
                 <h2 class="section-title">Dealer</h2>
                 <div class="sum-display">Sum: <span id="dealer-sum">?</span></div>
                 <div id="dealer-cards" class="cards-container"></div>
             </div>
-            <!-- Player hands will be dynamically inserted here -->
-            <div id="player-hands-container"></div>
+   
+         <div id="player-hands-container"></div>
         </div>
 
-        <div class="betting-section panel">
-            <h3>Place Your Bet</h3>
-            <div class="betting-controls">
-                <button class="chip-button chip-5" onclick="addToBet(5)">$5</button>
-                <button class="chip-button chip-10" onclick="addToBet(10)">$10</button>
-                <button class="chip-button chip-25" onclick="addToBet(25)">$25</button>
-                <button class="chip-button chip-50" onclick="addToBet(50)">$50</button>
-                <button class="chip-button chip-100" onclick="addToBet(100)">$100</button>
-            </div>
-            <div class="bet-controls">
-                <button class="bet-btn" onclick="clearBet()">Clear</button>
-                <button class="bet-btn" onclick="maxBet()">Max</button>
-                <button class="bet-btn" onclick="repeatBet()">Repeat</button>
-            </div>
-            <div class="current-bet">Current Bet: $<span id="current-bet">0</span></div>
-            
-            <div class="game-controls">
-                <button id="deal-btn" class="game-btn btn-deal" onclick="dealCards()">Deal</button>
-                <button id="hit-btn" class="game-btn btn-hit" onclick="hit()" disabled>Hit</button>
-                <button id="stand-btn" class="game-btn btn-stand" onclick="stand()" disabled>Stand</button>
-                <button id="double-btn" class="game-btn btn-double" onclick="doubleDown()" disabled>Double</button>
-                <button id="split-btn" class="game-btn btn-split" onclick="split()" disabled>Split</button>
-            </div>
-        </div>
-
-        <div id="game-message" class="game-message message-info">
-            <div class="info-panel">
-                <div class="bankroll-info">💰 Bankroll: $<span id="bankroll">500</span></div>
-                <div class="house-edge-control">
+        <div class="panel betting-section">
+            <div class="status-info-group">
+                <div class="info-panel-item">
+                    <span class="icon">💰</span>
+     
+               Bankroll: <span id="bankroll">500</span>
+                </div>
+                <div class="info-panel-item">
+                    <span class="icon">⚙️</span>
                     <label for="house-edge">House Edge (%):</label>
-                    <input type="number" id="house-edge" min="0" max="10" step="0.1" value="0.5">
+      
+              <input type="number" id="house-edge" min="0" max="10" step="0.1" value="0.5">
                 </div>
             </div>
-            <div class="message-text">Welcome! Place your bet and deal the cards.</div>
+            
+            <h3>Place Your Bet</h3>
+            <div class="betting-controls">
+             
+   <button class="chip-btn chip-5" data-value="5"><span>$5</span></button>
+                <button class="chip-btn chip-10" data-value="10"><span>$10</span></button>
+                <button class="chip-btn chip-25" data-value="25"><span>$25</span></button>
+                <button class="chip-btn chip-50" data-value="50"><span>$50</span></button>
+                <button class="chip-btn chip-100" data-value="100"><span>$100</span></button>
+            </div>
+      
+      <div class="bet-controls">
+                <button class="bet-btn">Clear</button>
+                <button class="bet-btn">Max</button>
+                <button id="repeat-btn" class="bet-btn">Repeat</button>
+            </div>
+            <div class="current-bet-display">Current Bet: $<span id="current-bet">0</span></div>
+            
+  
+          <div class="game-controls">
+                <button id="deal-btn" class="game-btn btn-deal">Deal</button>
+                <button id="hit-btn" class="game-btn btn-hit" disabled>Hit</button>
+                <button id="stand-btn" class="game-btn btn-stand" disabled>Stand</button>
+                <button id="double-btn" class="game-btn btn-double" disabled>Double</button>
+          
+      <button id="split-btn" class="game-btn btn-split" disabled>Split</button>
+            </div>
+        </div>
+
+        <div class="panel message-panel">
+             <div id="message-text" class="message-text">Welcome!
+Place your bet to begin.</div>
         </div>
     </div>
 
