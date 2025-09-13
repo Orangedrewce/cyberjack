@@ -101,13 +101,9 @@ function updateUI() {
         dealerCardsEl.appendChild(createCardElement(state.dealerHiddenCard, true));
     }
     
-// Show correct dealer sum based on game phase
-if (state.gamePhase === 'player-turn' && state.dealerHiddenCard) {
-    dealerSumEl.textContent = getHandSum(state.dealerCards); // FIXED
-} else {
-    const allDealerCards = [...state.dealerCards, ...(state.dealerHiddenCard ? [state.dealerHiddenCard] : [])];
-    dealerSumEl.textContent = getHandSum(allDealerCards); // FIXED
-}
+    // Always show the sum of VISIBLE cards. The sum will update automatically
+    // when the hidden card is revealed and moved to the dealerCards array.
+    dealerSumEl.textContent = getHandSum(state.dealerCards);
 
     // Update player hands
     playerHandsContainer.innerHTML = '';
@@ -222,6 +218,7 @@ async function hit() {
     const hand = state.playerHands[state.currentHandIndex];
     if (hand.finished) return;
 
+    await delay(400);
     hand.cards.push(state.deck.pop());
     updateUI();
     
@@ -265,6 +262,8 @@ async function doubleDown() {
     
     state.bankroll -= hand.bet;
     hand.bet *= 2;
+    
+    await delay(400);
     hand.cards.push(state.deck.pop());
     hand.finished = true; // Automatically stand after doubling
     
@@ -303,8 +302,12 @@ async function split() {
     // Insert new hand after current hand
     state.playerHands.splice(state.currentHandIndex + 1, 0, newHand);
 
-    // Deal new cards to both hands
+    // Deal new cards to both hands with animation
+    await delay(400);
     hand.cards.push(state.deck.pop());
+    updateUI();
+
+    await delay(400);
     newHand.cards.push(state.deck.pop());
     
     displayMessage(`Split into ${state.playerHands.length} hands. Playing Hand ${state.currentHandIndex + 1}.`);
@@ -353,7 +356,7 @@ async function startDealerTurn() {
         await delay(800);
     }
 
-    // Dealer must hit on soft 17
+    // Dealer must hit until 17
     while (getHandSum(state.dealerCards) < 17) {
         displayMessage(`Dealer has ${getHandSum(state.dealerCards)}, must hit...`);
         await delay(800);
